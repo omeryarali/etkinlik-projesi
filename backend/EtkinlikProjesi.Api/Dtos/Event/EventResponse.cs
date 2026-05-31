@@ -34,6 +34,8 @@ public class EventResponse
 
     public int Capacity { get; set; }
 
+    public int ParticipantCount { get; set; }
+
     public bool IsPaid { get; set; }
 
     public decimal? Price { get; set; }
