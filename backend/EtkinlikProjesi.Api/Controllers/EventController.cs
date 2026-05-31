@@ -277,6 +277,34 @@ public class EventController : ControllerBase
     }
 
     [Authorize]
+    [HttpPost("{id}/leave")]
+    public async Task<IActionResult> LeaveEvent(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var participant = await _context.EventParticipants
+            .FirstOrDefaultAsync(x => x.EventId == id && x.UserId == userId && x.Status == "Joined");
+
+        if (participant == null)
+        {
+            return NotFound("Bu etkinlik için aktif katılım kaydınız bulunamadı.");
+        }
+
+        participant.Status = "Cancelled";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Etkinlik katılımı iptal edildi.");
+    }
+
+    [Authorize]
     [HttpGet("my-joined-events")]
     public async Task<IActionResult> GetMyJoinedEvents()
     {
