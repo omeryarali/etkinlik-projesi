@@ -1,0 +1,6 @@
+@EtkinlikProjesi.Api_HostAddress = http://localhost:5270
+
+GET {{EtkinlikProjesi.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

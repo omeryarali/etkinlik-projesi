@@ -1,0 +1,36 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# User specific files
+*.user
+*.suo
+*.rsuser
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# ASP.NET
+appsettings.Development.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node projects - ileride admin/mobile için lazım olacak
+node_modules/
+.next/
+dist/
+build/
+.expo/
