@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddControllers();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -21,5 +23,7 @@ if (app.Environment.IsDevelopment())
 
 // Test endpoint
 app.MapGet("/", () => "EtkinlikProjesi API çalışıyor.");
+
+app.MapControllers();
 
 app.Run();
