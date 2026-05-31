@@ -168,6 +168,53 @@ public class EventController : ControllerBase
         return Ok(events);
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetEventDetail(int id)
+    {
+        var eventItem = await _context.Events
+            .Include(x => x.OrganizerProfile)
+            .Include(x => x.EventCategory)
+            .FirstOrDefaultAsync(x => x.Id == id && x.Status == "Approved");
+
+        if (eventItem == null)
+        {
+            return NotFound("Onaylı etkinlik bulunamadı.");
+        }
+
+        var participantCount = await _context.EventParticipants
+            .CountAsync(x => x.EventId == eventItem.Id && x.Status == "Joined");
+
+        var response = new EventResponse
+        {
+            Id = eventItem.Id,
+            OrganizerProfileId = eventItem.OrganizerProfileId,
+            OrganizerName = eventItem.OrganizerProfile.OrganizerName,
+            EventCategoryId = eventItem.EventCategoryId,
+            CategoryName = eventItem.EventCategory.Name,
+            Title = eventItem.Title,
+            Description = eventItem.Description,
+            StartDate = eventItem.StartDate,
+            EndDate = eventItem.EndDate,
+            City = eventItem.City,
+            District = eventItem.District,
+            LocationName = eventItem.LocationName,
+            Address = eventItem.Address,
+            Latitude = eventItem.Latitude,
+            Longitude = eventItem.Longitude,
+            Capacity = eventItem.Capacity,
+            ParticipantCount = participantCount,
+            IsPaid = eventItem.IsPaid,
+            Price = eventItem.Price,
+            CoverImageUrl = eventItem.CoverImageUrl,
+            Rules = eventItem.Rules,
+            Status = eventItem.Status,
+            CreatedAt = eventItem.CreatedAt,
+            ApprovedAt = eventItem.ApprovedAt
+        };
+
+        return Ok(response);
+    }
+
     [Authorize(Roles = "Organizer")]
     [HttpGet("my-events")]
     public async Task<IActionResult> GetMyEvents()
