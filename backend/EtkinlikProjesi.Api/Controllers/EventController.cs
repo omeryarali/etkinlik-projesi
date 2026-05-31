@@ -1,9 +1,10 @@
-﻿using System.Security.Claims;
-using EtkinlikProjesi.Api.Data;
+﻿using EtkinlikProjesi.Api.Data;
 using EtkinlikProjesi.Api.Dtos.Event;
+using EtkinlikProjesi.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EtkinlikProjesi.Api.Controllers;
 
@@ -220,5 +221,106 @@ public class EventController : ControllerBase
             .ToListAsync();
 
         return Ok(events);
+    }
+    [Authorize]
+    [HttpPost("{id}/join")]
+    public async Task<IActionResult> JoinEvent(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == id && x.Status == "Approved");
+
+        if (eventItem == null)
+        {
+            return NotFound("Onaylı etkinlik bulunamadı.");
+        }
+
+        var alreadyJoined = await _context.EventParticipants
+            .AnyAsync(x => x.EventId == id && x.UserId == userId && x.Status == "Joined");
+
+        if (alreadyJoined)
+        {
+            return BadRequest("Bu etkinliğe zaten katıldınız.");
+        }
+
+        var currentParticipantCount = await _context.EventParticipants
+            .CountAsync(x => x.EventId == id && x.Status == "Joined");
+
+        if (currentParticipantCount >= eventItem.Capacity)
+        {
+            return BadRequest("Etkinlik kontenjanı dolmuştur.");
+        }
+
+        var participant = new EventParticipant
+        {
+            EventId = id,
+            UserId = userId,
+            Status = "Joined",
+            JoinedAt = DateTime.UtcNow
+        };
+
+        _context.EventParticipants.Add(participant);
+        await _context.SaveChangesAsync();
+
+        return Ok("Etkinliğe katılım başarılı.");
+    }
+
+    [Authorize]
+    [HttpGet("my-joined-events")]
+    public async Task<IActionResult> GetMyJoinedEvents()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var joinedEvents = await _context.EventParticipants
+            .Include(x => x.Event)
+                .ThenInclude(x => x.OrganizerProfile)
+            .Include(x => x.Event)
+                .ThenInclude(x => x.EventCategory)
+            .Where(x => x.UserId == userId && x.Status == "Joined")
+            .OrderBy(x => x.Event.StartDate)
+            .Select(x => new EventResponse
+            {
+                Id = x.Event.Id,
+                OrganizerProfileId = x.Event.OrganizerProfileId,
+                OrganizerName = x.Event.OrganizerProfile.OrganizerName,
+                EventCategoryId = x.Event.EventCategoryId,
+                CategoryName = x.Event.EventCategory.Name,
+                Title = x.Event.Title,
+                Description = x.Event.Description,
+                StartDate = x.Event.StartDate,
+                EndDate = x.Event.EndDate,
+                City = x.Event.City,
+                District = x.Event.District,
+                LocationName = x.Event.LocationName,
+                Address = x.Event.Address,
+                Latitude = x.Event.Latitude,
+                Longitude = x.Event.Longitude,
+                Capacity = x.Event.Capacity,
+                IsPaid = x.Event.IsPaid,
+                Price = x.Event.Price,
+                CoverImageUrl = x.Event.CoverImageUrl,
+                Rules = x.Event.Rules,
+                Status = x.Event.Status,
+                CreatedAt = x.Event.CreatedAt,
+                ApprovedAt = x.Event.ApprovedAt
+            })
+            .ToListAsync();
+
+        return Ok(joinedEvents);
     }
 }
