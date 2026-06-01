@@ -129,12 +129,24 @@ public class EventController : ControllerBase
     }
 
     [HttpGet("approved")]
-    public async Task<IActionResult> GetApprovedEvents()
+    public async Task<IActionResult> GetApprovedEvents([FromQuery] string? city,[FromQuery] string? district,[FromQuery] int? categoryId)
     {
-        var events = await _context.Events
+        var query = _context.Events
             .Include(x => x.OrganizerProfile)
             .Include(x => x.EventCategory)
             .Where(x => x.Status == "Approved")
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(city))
+            query = query.Where(x => x.City.ToLower() == city.ToLower());
+
+        if (!string.IsNullOrWhiteSpace(district))
+            query = query.Where(x => x.District.ToLower() == district.ToLower());
+
+        if (categoryId.HasValue)
+            query = query.Where(x => x.EventCategoryId == categoryId.Value);
+
+        var events = await query
             .OrderBy(x => x.StartDate)
             .Select(x => new EventResponse
             {
@@ -401,5 +413,45 @@ public class EventController : ControllerBase
             .ToListAsync();
 
         return Ok(joinedEvents);
+    }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpGet("{id}/participants")]
+    public async Task<IActionResult> GetEventParticipants(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+
+        var userId = int.Parse(userIdString);
+
+        // Bu etkinlik bu organizatöre mi ait?
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+
+        if (organizerProfile == null)
+            return BadRequest("Organizatör profiliniz bulunamadı.");
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == id && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+            return NotFound("Etkinlik bulunamadı veya bu etkinlik size ait değil.");
+
+        var participants = await _context.EventParticipants
+            .Include(x => x.User)
+            .Where(x => x.EventId == id && x.Status == "Joined")
+            .OrderBy(x => x.JoinedAt)
+            .Select(x => new EventParticipantResponse
+            {
+                UserId = x.UserId,
+                FullName = x.User.FullName,
+                Email = x.User.Email,
+                JoinedAt = x.JoinedAt
+            })
+            .ToListAsync();
+
+        return Ok(participants);
     }
 }
