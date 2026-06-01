@@ -302,4 +302,48 @@ public class AdminController : ControllerBase
 
         return Ok(users);
     }
+
+    [HttpPut("users/{id}/activate")]
+    public async Task<IActionResult> ActivateUser(int id)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
+
+        if (user == null)
+        {
+            return NotFound("Kullanıcı bulunamadı.");
+        }
+
+        if (user.IsActive)
+        {
+            return BadRequest("Kullanıcı zaten aktif.");
+        }
+
+        user.IsActive = true;
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Kullanıcı aktif hale getirildi.");
+    }
+
+    [HttpPut("users/{id}/deactivate")]
+    public async Task<IActionResult> DeactivateUser(int id)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
+
+        if (user == null)
+        {
+            return NotFound("Kullanıcı bulunamadı.");
+        }
+
+        if (!user.IsActive)
+        {
+            return BadRequest("Kullanıcı zaten pasif.");
+        }
+
+        user.IsActive = false;
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Kullanıcı pasif hale getirildi.");
+    }
 }
