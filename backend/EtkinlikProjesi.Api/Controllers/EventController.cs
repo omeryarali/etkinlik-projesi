@@ -509,4 +509,134 @@ public class EventController : ControllerBase
 
         return Ok("Etkinlik iptal edildi.");
     }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateEvent(int id, UpdateEventRequest request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.Status == "Approved");
+
+        if (organizerProfile == null)
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == id && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliği güncelleme yetkiniz yok.");
+        }
+
+        if (eventItem.Status == "Cancelled")
+        {
+            return BadRequest("İptal edilmiş etkinlik güncellenemez.");
+        }
+
+        if (eventItem.Status == "Completed")
+        {
+            return BadRequest("Tamamlanmış etkinlik güncellenemez.");
+        }
+
+        var category = await _context.EventCategories
+            .FirstOrDefaultAsync(x => x.Id == request.EventCategoryId && x.IsActive);
+
+        if (category == null)
+        {
+            return BadRequest("Geçerli bir etkinlik kategorisi seçilmelidir.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title) ||
+            string.IsNullOrWhiteSpace(request.City) ||
+            string.IsNullOrWhiteSpace(request.District) ||
+            string.IsNullOrWhiteSpace(request.LocationName) ||
+            request.StartDate == default)
+        {
+            return BadRequest("Başlık, şehir, ilçe, konum adı ve başlangıç tarihi zorunludur.");
+        }
+
+        if (request.Capacity <= 0)
+        {
+            return BadRequest("Kontenjan 0'dan büyük olmalıdır.");
+        }
+
+        if (request.IsPaid && (!request.Price.HasValue || request.Price.Value <= 0))
+        {
+            return BadRequest("Ücretli etkinliklerde fiyat 0'dan büyük olmalıdır.");
+        }
+
+        var currentParticipantCount = await _context.EventParticipants
+            .CountAsync(x => x.EventId == eventItem.Id && x.Status == "Joined");
+
+        if (request.Capacity < currentParticipantCount)
+        {
+            return BadRequest($"Kontenjan mevcut katılımcı sayısından küçük olamaz. Mevcut katılımcı: {currentParticipantCount}");
+        }
+
+        eventItem.EventCategoryId = request.EventCategoryId;
+        eventItem.Title = request.Title;
+        eventItem.Description = request.Description;
+        eventItem.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
+        eventItem.EndDate = request.EndDate.HasValue
+            ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc)
+            : null;
+        eventItem.City = request.City;
+        eventItem.District = request.District;
+        eventItem.LocationName = request.LocationName;
+        eventItem.Address = request.Address;
+        eventItem.Latitude = request.Latitude;
+        eventItem.Longitude = request.Longitude;
+        eventItem.Capacity = request.Capacity;
+        eventItem.IsPaid = request.IsPaid;
+        eventItem.Price = request.Price;
+        eventItem.CoverImageUrl = request.CoverImageUrl;
+        eventItem.Rules = request.Rules;
+
+        // Güncellenen etkinlik tekrar admin onayına düşsün
+        eventItem.Status = "Pending";
+        eventItem.ApprovedAt = null;
+
+        await _context.SaveChangesAsync();
+
+        var response = new EventResponse
+        {
+            Id = eventItem.Id,
+            OrganizerProfileId = eventItem.OrganizerProfileId,
+            OrganizerName = organizerProfile.OrganizerName,
+            EventCategoryId = eventItem.EventCategoryId,
+            CategoryName = category.Name,
+            Title = eventItem.Title,
+            Description = eventItem.Description,
+            StartDate = eventItem.StartDate,
+            EndDate = eventItem.EndDate,
+            City = eventItem.City,
+            District = eventItem.District,
+            LocationName = eventItem.LocationName,
+            Address = eventItem.Address,
+            Latitude = eventItem.Latitude,
+            Longitude = eventItem.Longitude,
+            Capacity = eventItem.Capacity,
+            ParticipantCount = currentParticipantCount,
+            IsPaid = eventItem.IsPaid,
+            Price = eventItem.Price,
+            CoverImageUrl = eventItem.CoverImageUrl,
+            Rules = eventItem.Rules,
+            Status = eventItem.Status,
+            CreatedAt = eventItem.CreatedAt,
+            ApprovedAt = eventItem.ApprovedAt
+        };
+
+        return Ok(response);
+    }
 }
