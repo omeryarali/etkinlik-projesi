@@ -417,4 +417,29 @@ public class AdminController : ControllerBase
 
         return Ok("Organizatör tekrar aktif hale getirildi.");
     }
+
+    [HttpGet("dashboard-stats")]
+    public async Task<IActionResult> GetDashboardStats()
+    {
+        var stats = new AdminDashboardStatsResponse
+        {
+            TotalUsers = await _context.Users.CountAsync(),
+            ActiveUsers = await _context.Users.CountAsync(x => x.IsActive),
+
+            TotalOrganizers = await _context.OrganizerProfiles.CountAsync(),
+            PendingOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Pending"),
+            ApprovedOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Approved"),
+            SuspendedOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Suspended"),
+
+            TotalEvents = await _context.Events.CountAsync(),
+            PendingEvents = await _context.Events.CountAsync(x => x.Status == "Pending"),
+            ApprovedEvents = await _context.Events.CountAsync(x => x.Status == "Approved"),
+            CancelledEvents = await _context.Events.CountAsync(x => x.Status == "Cancelled"),
+            RejectedEvents = await _context.Events.CountAsync(x => x.Status == "Rejected"),
+
+            TotalParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "Joined")
+        };
+
+        return Ok(stats);
+    }
 }
