@@ -642,6 +642,70 @@ GET /api/Category
 
 ```
 
+## Kategori Aktif Hale Getir
+
+```http
+PUT /api/Category/{id}/activate
+```
+
+Pasif durumdaki kategoriyi tekrar aktif hale getirir.
+
+### Yetki
+
+```text
+Admin
+```
+
+### Header
+
+```http
+Authorization: Bearer ADMIN_TOKEN
+```
+
+### Response
+
+```text
+Kategori aktif hale getirildi.
+```
+
+---
+
+## Kategori Pasif Hale Getir
+
+```http
+PUT /api/Category/{id}/deactivate
+```
+
+Aktif kategoriyi pasif hale getirir.
+
+Pasif hale getirilen kategori kullanıcı tarafındaki kategori listesinde görünmez.
+
+Kategori silinmez, sadece:
+
+```text
+IsActive = false
+```
+
+yapılır.
+
+### Yetki
+
+```text
+Admin
+```
+
+### Header
+
+```http
+Authorization: Bearer ADMIN_TOKEN
+```
+
+### Response
+
+```text
+Kategori pasif hale getirildi.
+```
+
 
 
 Aktif etkinlik kategorilerini listeler.

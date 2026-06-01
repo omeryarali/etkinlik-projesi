@@ -602,17 +602,16 @@ Diğer
 
 
 
-\## EventCategories Notları
+## EventCategories Notları
 
+* Sadece `IsActive = true` olan kategoriler kullanıcı tarafında listelenir.
+* Admin yeni kategori oluşturabilir.
+* Admin kategoriyi pasif hale getirebilir.
+* Admin pasif kategoriyi tekrar aktif hale getirebilir.
+* Kategoriler etkinlik oluştururken kullanılır.
+* Kategori silmek yerine `IsActive = false` yapılması tercih edilir.
+* Bu yaklaşım, kategoriye bağlı eski etkinliklerin veritabanı ilişkilerinin bozulmasını engeller.
 
-
-\* Sadece `IsActive = true` olan kategoriler kullanıcı tarafında listelenir.
-
-\* Admin yeni kategori oluşturabilir.
-
-\* Kategoriler etkinlik oluştururken kullanılır.
-
-\* Kategori silmek yerine ileride `IsActive = false` yapılması daha güvenlidir.
 
 
 

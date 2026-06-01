@@ -318,49 +318,35 @@ PUT /api/Admin/organizers/{id}/reject
 
 
 
-\## 4. Etkinlik Kategori Sistemi
-
-
+## 4. Etkinlik Kategori Sistemi
 
 Durum: Tamamlandı
 
-
-
 Etkinlikler kategoriye bağlı oluşturulur.
-
-
 
 İlk kategori örnekleri:
 
-
-
 ```text
-
 Turnuva
-
 Spor
-
 Sosyal Buluşma
-
 Oyun Gecesi
-
 Diğer
-
 ```
 
+Admin kategori oluşturabilir, kategorileri aktif veya pasif hale getirebilir.
 
+Kategori silmek yerine pasif hale getirme mantığı kullanılır. Böylece daha önce o kategoriyle oluşturulmuş etkinliklerin veritabanı ilişkileri bozulmaz.
 
 Endpointler:
 
-
-
 ```http
-
 GET /api/Category
-
 POST /api/Category
-
+PUT /api/Category/{id}/activate
+PUT /api/Category/{id}/deactivate
 ```
+
 
 
 
