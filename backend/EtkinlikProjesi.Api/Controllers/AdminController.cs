@@ -106,6 +106,54 @@ public class AdminController : ControllerBase
 
         return Ok("Organizatör başvurusu reddedildi.");
     }
+
+    [HttpGet("events")]
+    public async Task<IActionResult> GetEvents([FromQuery] string? status)
+    {
+        var query = _context.Events
+            .Include(x => x.OrganizerProfile)
+            .Include(x => x.EventCategory)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(x => x.Status == status);
+        }
+
+        var events = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new EventResponse
+            {
+                Id = x.Id,
+                OrganizerProfileId = x.OrganizerProfileId,
+                OrganizerName = x.OrganizerProfile.OrganizerName,
+                EventCategoryId = x.EventCategoryId,
+                CategoryName = x.EventCategory.Name,
+                Title = x.Title,
+                Description = x.Description,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                City = x.City,
+                District = x.District,
+                LocationName = x.LocationName,
+                Address = x.Address,
+                Latitude = x.Latitude,
+                Longitude = x.Longitude,
+                Capacity = x.Capacity,
+                ParticipantCount = _context.EventParticipants.Count(p => p.EventId == x.Id && p.Status == "Joined"),
+                IsPaid = x.IsPaid,
+                Price = x.Price,
+                CoverImageUrl = x.CoverImageUrl,
+                Rules = x.Rules,
+                Status = x.Status,
+                CreatedAt = x.CreatedAt,
+                ApprovedAt = x.ApprovedAt
+            })
+            .ToListAsync();
+
+        return Ok(events);
+    }
+
     [HttpGet("events/pending")]
     public async Task<IActionResult> GetPendingEvents()
     {
