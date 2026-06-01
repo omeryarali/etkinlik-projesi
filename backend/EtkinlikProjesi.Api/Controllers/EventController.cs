@@ -463,4 +463,50 @@ public class EventController : ControllerBase
 
         return Ok(participants);
     }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpPost("{id}/cancel")]
+    public async Task<IActionResult> CancelEvent(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.Status == "Approved");
+
+        if (organizerProfile == null)
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == id && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliği iptal etme yetkiniz yok.");
+        }
+
+        if (eventItem.Status == "Cancelled")
+        {
+            return BadRequest("Bu etkinlik zaten iptal edilmiş.");
+        }
+
+        if (eventItem.Status == "Completed")
+        {
+            return BadRequest("Tamamlanmış etkinlik iptal edilemez.");
+        }
+
+        eventItem.Status = "Cancelled";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Etkinlik iptal edildi.");
+    }
 }
