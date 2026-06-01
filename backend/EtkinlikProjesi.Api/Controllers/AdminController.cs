@@ -20,6 +20,40 @@ public class AdminController : ControllerBase
         _context = context;
     }
 
+    [HttpGet("organizers")]
+    public async Task<IActionResult> GetOrganizers([FromQuery] string? status)
+    {
+        var query = _context.OrganizerProfiles
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(x => x.Status == status);
+        }
+
+        var organizers = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new OrganizerProfileResponse
+            {
+                Id = x.Id,
+                UserId = x.UserId,
+                OrganizerName = x.OrganizerName,
+                OrganizerType = x.OrganizerType,
+                Description = x.Description,
+                PhoneNumber = x.PhoneNumber,
+                InstagramUrl = x.InstagramUrl,
+                City = x.City,
+                District = x.District,
+                Status = x.Status,
+                RejectionReason = x.RejectionReason,
+                CreatedAt = x.CreatedAt,
+                ApprovedAt = x.ApprovedAt
+            })
+            .ToListAsync();
+
+        return Ok(organizers);
+    }
+
     [HttpGet("organizers/pending")]
     public async Task<IActionResult> GetPendingOrganizers()
     {
