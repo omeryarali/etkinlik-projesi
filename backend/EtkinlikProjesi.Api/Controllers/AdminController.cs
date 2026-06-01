@@ -274,4 +274,32 @@ public class AdminController : ControllerBase
 
         return Ok("Etkinlik reddedildi.");
     }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers([FromQuery] string? role)
+    {
+        var query = _context.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            query = query.Where(x => x.Role == role);
+        }
+
+        var users = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new AdminUserResponse
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                Email = x.Email,
+                PhoneNumber = x.PhoneNumber,
+                ProfileImageUrl = x.ProfileImageUrl,
+                Role = x.Role,
+                IsActive = x.IsActive,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
 }
