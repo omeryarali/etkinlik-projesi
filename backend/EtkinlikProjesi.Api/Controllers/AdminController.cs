@@ -346,4 +346,75 @@ public class AdminController : ControllerBase
 
         return Ok("Kullanıcı pasif hale getirildi.");
     }
+
+    [HttpPut("organizers/{id}/suspend")]
+    public async Task<IActionResult> SuspendOrganizer(int id)
+    {
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (organizerProfile == null)
+        {
+            return NotFound("Organizatör profili bulunamadı.");
+        }
+
+        if (organizerProfile.Status == "Suspended")
+        {
+            return BadRequest("Organizatör zaten askıya alınmış.");
+        }
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == organizerProfile.UserId);
+
+        if (user == null)
+        {
+            return NotFound("Organizatöre ait kullanıcı bulunamadı.");
+        }
+
+        organizerProfile.Status = "Suspended";
+
+        if (user.Role == "Organizer")
+        {
+            user.Role = "Participant";
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Organizatör askıya alındı.");
+    }
+
+    [HttpPut("organizers/{id}/reactivate")]
+    public async Task<IActionResult> ReactivateOrganizer(int id)
+    {
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (organizerProfile == null)
+        {
+            return NotFound("Organizatör profili bulunamadı.");
+        }
+
+        if (organizerProfile.Status == "Approved")
+        {
+            return BadRequest("Organizatör zaten aktif.");
+        }
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == organizerProfile.UserId);
+
+        if (user == null)
+        {
+            return NotFound("Organizatöre ait kullanıcı bulunamadı.");
+        }
+
+        organizerProfile.Status = "Approved";
+        organizerProfile.RejectionReason = string.Empty;
+        organizerProfile.ApprovedAt = DateTime.UtcNow;
+
+        user.Role = "Organizer";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Organizatör tekrar aktif hale getirildi.");
+    }
 }
