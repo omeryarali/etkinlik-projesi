@@ -106,6 +106,38 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("me")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == userId);
+
+        if (user == null)
+        {
+            return NotFound("Kullanıcı bulunamadı.");
+        }
+
+        var response = new AuthResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role,
+            Token = string.Empty
+        };
+
+        return Ok(response);
+    }
     private string GenerateJwtToken(User user)
     {
         var issuer = _configuration["Jwt:Issuer"];
