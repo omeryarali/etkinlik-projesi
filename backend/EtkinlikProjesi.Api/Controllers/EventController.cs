@@ -129,7 +129,10 @@ public class EventController : ControllerBase
     }
 
     [HttpGet("approved")]
-    public async Task<IActionResult> GetApprovedEvents([FromQuery] string? city,[FromQuery] string? district,[FromQuery] int? categoryId)
+    public async Task<IActionResult> GetApprovedEvents(
+    [FromQuery] string? city,
+    [FromQuery] string? district,
+    [FromQuery] int? categoryId)
     {
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
@@ -138,13 +141,19 @@ public class EventController : ControllerBase
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(city))
-            query = query.Where(x => x.City.ToLower() == city.ToLower());
+        {
+            query = query.Where(x => EF.Functions.ILike(x.City, city));
+        }
 
         if (!string.IsNullOrWhiteSpace(district))
-            query = query.Where(x => x.District.ToLower() == district.ToLower());
+        {
+            query = query.Where(x => EF.Functions.ILike(x.District, district));
+        }
 
         if (categoryId.HasValue)
+        {
             query = query.Where(x => x.EventCategoryId == categoryId.Value);
+        }
 
         var events = await query
             .OrderBy(x => x.StartDate)
