@@ -90,4 +90,52 @@ public class CategoryController : ControllerBase
 
         return Ok("Kategori pasif hale getirildi.");
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}/activate")]
+    public async Task<IActionResult> ActivateCategory(int id)
+    {
+        var category = await _context.EventCategories
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (category == null)
+        {
+            return NotFound("Kategori bulunamadı.");
+        }
+
+        if (category.IsActive)
+        {
+            return BadRequest("Kategori zaten aktif.");
+        }
+
+        category.IsActive = true;
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Kategori aktif hale getirildi.");
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}/deactivate")]
+    public async Task<IActionResult> DeactivateCategory(int id)
+    {
+        var category = await _context.EventCategories
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (category == null)
+        {
+            return NotFound("Kategori bulunamadı.");
+        }
+
+        if (!category.IsActive)
+        {
+            return BadRequest("Kategori zaten pasif.");
+        }
+
+        category.IsActive = false;
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Kategori pasif hale getirildi.");
+    }
 }
