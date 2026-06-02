@@ -133,7 +133,8 @@ public class EventController : ControllerBase
     [FromQuery] string? city,
     [FromQuery] string? district,
     [FromQuery] int? categoryId,
-    [FromQuery] string? dateFilter)
+    [FromQuery] string? dateFilter,
+    [FromQuery] bool? isPaid)
     {
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
@@ -154,6 +155,10 @@ public class EventController : ControllerBase
         if (categoryId.HasValue)
         {
             query = query.Where(x => x.EventCategoryId == categoryId.Value);
+        }
+        if (isPaid.HasValue)
+        {
+            query = query.Where(x => x.IsPaid == isPaid.Value);
         }
 
         var today = DateTime.UtcNow.Date;
