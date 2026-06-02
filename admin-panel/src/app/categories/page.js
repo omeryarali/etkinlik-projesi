@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiFetch } from "../../lib/api";
+import { getAdminToken } from "../../lib/auth";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -19,7 +20,7 @@ export default function CategoriesPage() {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       if (!token) {
         window.location.href = "/login";
@@ -48,7 +49,7 @@ export default function CategoriesPage() {
       setError("");
       setSuccess("");
 
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       if (!name.trim()) {
         setError("Kategori adı boş olamaz.");
@@ -92,7 +93,7 @@ export default function CategoriesPage() {
       setError("");
       setSuccess("");
 
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       await apiFetch(path, {
         method: "PUT",

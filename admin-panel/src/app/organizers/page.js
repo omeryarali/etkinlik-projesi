@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiFetch } from "../../lib/api";
+import { getAdminToken } from "../../lib/auth";
 
 export default function OrganizersPage() {
   const [organizers, setOrganizers] = useState([]);
@@ -18,7 +19,7 @@ export default function OrganizersPage() {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       if (!token) {
         window.location.href = "/login";
@@ -66,7 +67,7 @@ export default function OrganizersPage() {
       setActionLoadingId(id);
       setError("");
 
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       await apiFetch(path, {
         method: "PUT",

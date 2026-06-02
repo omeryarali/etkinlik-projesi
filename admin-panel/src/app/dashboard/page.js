@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import { getAdminToken } from "../../lib/auth";
 import AdminLayout from "../../components/AdminLayout";
 
 export default function DashboardPage() {
@@ -11,7 +12,7 @@ export default function DashboardPage() {
 
   async function loadDashboardStats() {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
 
       if (!token) {
         window.location.href = "/login";
