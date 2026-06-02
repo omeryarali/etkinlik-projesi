@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import { getAdminToken, getAdminUser } from "../../lib/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("omer@test.com");
@@ -10,22 +11,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const userRaw = localStorage.getItem("adminUser");
+    const token = getAdminToken();
+    const user = getAdminUser();
 
-    if (!token || !userRaw) {
-      return;
-    }
-
-    try {
-      const user = JSON.parse(userRaw);
-
-      if (user.role === "Admin") {
-        window.location.href = "/dashboard";
-      }
-    } catch {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
+    if (token && user?.role === "Admin") {
+      window.location.href = "/dashboard";
     }
   }, []);
 

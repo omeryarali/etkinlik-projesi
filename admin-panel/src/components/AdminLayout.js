@@ -3,44 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getAdminUser, isAdminLoggedIn, logoutAdmin } from "../lib/auth";
 
 export default function AdminLayout({ children, title, description }) {
   const pathname = usePathname();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const userRaw = localStorage.getItem("adminUser");
-
-    if (!token || !userRaw) {
-      window.location.href = "/login";
+    if (!isAdminLoggedIn()) {
+      logoutAdmin();
       return;
     }
 
-    try {
-      const user = JSON.parse(userRaw);
-
-      if (user.role !== "Admin") {
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminUser");
-        window.location.href = "/login";
-        return;
-      }
-    } catch {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      window.location.href = "/login";
-      return;
-    }
-
+    setAdminUser(getAdminUser());
     setCheckingAuth(false);
   }, []);
-
-  function handleLogout() {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    window.location.href = "/login";
-  }
 
   const menuItems = [
     {
@@ -80,6 +58,15 @@ export default function AdminLayout({ children, title, description }) {
           <div className="px-6 py-5 border-b border-gray-800">
             <h1 className="text-lg font-bold">Etkinlik Admin</h1>
             <p className="text-xs text-gray-400 mt-1">Yönetim Paneli</p>
+
+            {adminUser && (
+              <div className="mt-4 rounded-lg bg-gray-800 px-3 py-2">
+                <p className="text-sm font-medium text-white">
+                  {adminUser.fullName}
+                </p>
+                <p className="text-xs text-gray-400">{adminUser.email}</p>
+              </div>
+            )}
           </div>
 
           <nav className="flex-1 px-4 py-5 space-y-2">
@@ -104,7 +91,7 @@ export default function AdminLayout({ children, title, description }) {
 
           <div className="p-4 border-t border-gray-800">
             <button
-              onClick={handleLogout}
+              onClick={logoutAdmin}
               className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium hover:bg-red-700"
             >
               Çıkış Yap
@@ -123,7 +110,7 @@ export default function AdminLayout({ children, title, description }) {
               </div>
 
               <button
-                onClick={handleLogout}
+                onClick={logoutAdmin}
                 className="md:hidden rounded-lg bg-red-600 px-4 py-2 text-white text-sm hover:bg-red-700"
               >
                 Çıkış
