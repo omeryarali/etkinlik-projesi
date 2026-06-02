@@ -1,10 +1,11 @@
 ﻿using EtkinlikProjesi.Api.Data;
 using EtkinlikProjesi.Api.Dtos.Admin;
+using EtkinlikProjesi.Api.Dtos.Common;
+using EtkinlikProjesi.Api.Dtos.Event;
 using EtkinlikProjesi.Api.Dtos.Organizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using EtkinlikProjesi.Api.Dtos.Event;
 
 namespace EtkinlikProjesi.Api.Controllers;
 
@@ -21,18 +22,39 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("organizers")]
-    public async Task<IActionResult> GetOrganizers([FromQuery] string? status)
+    public async Task<IActionResult> GetOrganizers(
+    [FromQuery] string? status,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
-        var query = _context.OrganizerProfiles
-            .AsQueryable();
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
+        var query = _context.OrganizerProfiles.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
         {
             query = query.Where(x => x.Status == status);
         }
 
+        var totalCount = await query.CountAsync();
+
         var organizers = await query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new OrganizerProfileResponse
             {
                 Id = x.Id,
@@ -51,7 +73,20 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(organizers);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<OrganizerProfileResponse>
+        {
+            Items = organizers,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("organizers/pending")]
@@ -142,8 +177,26 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("events")]
-    public async Task<IActionResult> GetEvents([FromQuery] string? status)
+    public async Task<IActionResult> GetEvents(
+    [FromQuery] string? status,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
             .Include(x => x.EventCategory)
@@ -154,8 +207,12 @@ public class AdminController : ControllerBase
             query = query.Where(x => x.Status == status);
         }
 
+        var totalCount = await query.CountAsync();
+
         var events = await query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new EventResponse
             {
                 Id = x.Id,
@@ -185,7 +242,20 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(events);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<EventResponse>
+        {
+            Items = events,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("events/pending")]
@@ -276,8 +346,26 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("users")]
-    public async Task<IActionResult> GetUsers([FromQuery] string? role)
+    public async Task<IActionResult> GetUsers(
+    [FromQuery] string? role,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var query = _context.Users.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(role))
@@ -285,8 +373,12 @@ public class AdminController : ControllerBase
             query = query.Where(x => x.Role == role);
         }
 
+        var totalCount = await query.CountAsync();
+
         var users = await query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new AdminUserResponse
             {
                 Id = x.Id,
@@ -300,7 +392,20 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(users);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<AdminUserResponse>
+        {
+            Items = users,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [HttpPut("users/{id}/activate")]
