@@ -1,4 +1,5 @@
 ﻿using EtkinlikProjesi.Api.Data;
+using EtkinlikProjesi.Api.Dtos.Common;
 using EtkinlikProjesi.Api.Dtos.Event;
 using EtkinlikProjesi.Api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -137,8 +138,25 @@ public class EventController : ControllerBase
     [FromQuery] bool? isPaid,
     [FromQuery] string? search,
     [FromQuery] string? sortBy,
-    [FromQuery] bool? onlyAvailable)
+    [FromQuery] bool? onlyAvailable,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
             .Include(x => x.EventCategory)
@@ -221,7 +239,11 @@ public class EventController : ControllerBase
             _ => query.OrderBy(x => x.StartDate)
         };
 
+        var totalCount = await query.CountAsync();
+
         var events = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new EventResponse
             {
                 Id = x.Id,
@@ -251,7 +273,20 @@ public class EventController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(events);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<EventResponse>
+        {
+            Items = events,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
