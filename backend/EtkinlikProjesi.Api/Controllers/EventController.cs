@@ -338,8 +338,25 @@ public class EventController : ControllerBase
 
     [Authorize(Roles = "Organizer")]
     [HttpGet("my-events")]
-    public async Task<IActionResult> GetMyEvents()
+    public async Task<IActionResult> GetMyEvents(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userIdString))
@@ -357,11 +374,18 @@ public class EventController : ControllerBase
             return BadRequest("Organizatör profiliniz bulunamadı.");
         }
 
-        var events = await _context.Events
+        var query = _context.Events
             .Include(x => x.OrganizerProfile)
             .Include(x => x.EventCategory)
             .Where(x => x.OrganizerProfileId == organizerProfile.Id)
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+
+        var events = await query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new EventResponse
             {
                 Id = x.Id,
@@ -391,7 +415,20 @@ public class EventController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(events);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<EventResponse>
+        {
+            Items = events,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
     [Authorize]
     [HttpPost("{id}/join")]
@@ -474,8 +511,25 @@ public class EventController : ControllerBase
 
     [Authorize]
     [HttpGet("my-joined-events")]
-    public async Task<IActionResult> GetMyJoinedEvents()
+    public async Task<IActionResult> GetMyJoinedEvents(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userIdString))
@@ -485,13 +539,20 @@ public class EventController : ControllerBase
 
         var userId = int.Parse(userIdString);
 
-        var joinedEvents = await _context.EventParticipants
+        var query = _context.EventParticipants
             .Include(x => x.Event)
                 .ThenInclude(x => x.OrganizerProfile)
             .Include(x => x.Event)
                 .ThenInclude(x => x.EventCategory)
             .Where(x => x.UserId == userId && x.Status == "Joined")
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+
+        var joinedEvents = await query
             .OrderBy(x => x.Event.StartDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new EventResponse
             {
                 Id = x.Event.Id,
@@ -521,7 +582,20 @@ public class EventController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(joinedEvents);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<EventResponse>
+        {
+            Items = joinedEvents,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [Authorize(Roles = "Organizer")]
