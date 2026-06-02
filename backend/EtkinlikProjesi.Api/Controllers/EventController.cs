@@ -704,4 +704,158 @@ public class EventController : ControllerBase
 
         return Ok(response);
     }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpPost("{id}/complete")]
+    public async Task<IActionResult> CompleteEvent(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.Status == "Approved");
+
+        if (organizerProfile == null)
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == id && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliği tamamlama yetkiniz yok.");
+        }
+
+        if (eventItem.Status == "Completed")
+        {
+            return BadRequest("Bu etkinlik zaten tamamlanmış.");
+        }
+
+        if (eventItem.Status == "Cancelled")
+        {
+            return BadRequest("İptal edilmiş etkinlik tamamlandı yapılamaz.");
+        }
+
+        if (eventItem.Status == "Rejected")
+        {
+            return BadRequest("Reddedilmiş etkinlik tamamlandı yapılamaz.");
+        }
+
+        if (eventItem.Status == "Pending")
+        {
+            return BadRequest("Admin onayı bekleyen etkinlik tamamlandı yapılamaz.");
+        }
+
+        eventItem.Status = "Completed";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Etkinlik tamamlandı olarak işaretlendi.");
+    }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpPut("{eventId}/participants/{userId}/attended")]
+    public async Task<IActionResult> MarkParticipantAsAttended(int eventId, int userId)
+    {
+        var organizerUserIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(organizerUserIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var organizerUserId = int.Parse(organizerUserIdString);
+
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == organizerUserId && x.Status == "Approved");
+
+        if (organizerProfile == null)
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == eventId && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliğin katılımcılarını yönetme yetkiniz yok.");
+        }
+
+        var participant = await _context.EventParticipants
+            .FirstOrDefaultAsync(x => x.EventId == eventId && x.UserId == userId);
+
+        if (participant == null)
+        {
+            return NotFound("Katılımcı kaydı bulunamadı.");
+        }
+
+        if (participant.Status == "Cancelled")
+        {
+            return BadRequest("Katılımını iptal etmiş kullanıcı geldi olarak işaretlenemez.");
+        }
+
+        participant.Status = "Attended";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Katılımcı geldi olarak işaretlendi.");
+    }
+
+    [Authorize(Roles = "Organizer")]
+    [HttpPut("{eventId}/participants/{userId}/no-show")]
+    public async Task<IActionResult> MarkParticipantAsNoShow(int eventId, int userId)
+    {
+        var organizerUserIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(organizerUserIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var organizerUserId = int.Parse(organizerUserIdString);
+
+        var organizerProfile = await _context.OrganizerProfiles
+            .FirstOrDefaultAsync(x => x.UserId == organizerUserId && x.Status == "Approved");
+
+        if (organizerProfile == null)
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
+
+        var eventItem = await _context.Events
+            .FirstOrDefaultAsync(x => x.Id == eventId && x.OrganizerProfileId == organizerProfile.Id);
+
+        if (eventItem == null)
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliğin katılımcılarını yönetme yetkiniz yok.");
+        }
+
+        var participant = await _context.EventParticipants
+            .FirstOrDefaultAsync(x => x.EventId == eventId && x.UserId == userId);
+
+        if (participant == null)
+        {
+            return NotFound("Katılımcı kaydı bulunamadı.");
+        }
+
+        if (participant.Status == "Cancelled")
+        {
+            return BadRequest("Katılımını iptal etmiş kullanıcı gelmedi olarak işaretlenemez.");
+        }
+
+        participant.Status = "NoShow";
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Katılımcı gelmedi olarak işaretlendi.");
+    }
 }
