@@ -51,14 +51,38 @@ export default function OrganizersPage() {
   }
 
   async function approveOrganizer(id) {
+    const confirmed = window.confirm(
+      "Bu organizatör başvurusunu onaylamak istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runOrganizerAction(id, `/api/Admin/organizers/${id}/approve`);
   }
 
   async function suspendOrganizer(id) {
+    const confirmed = window.confirm(
+      "Bu organizatörü askıya almak istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runOrganizerAction(id, `/api/Admin/organizers/${id}/suspend`);
   }
 
   async function reactivateOrganizer(id) {
+    const confirmed = window.confirm(
+      "Bu organizatörü tekrar aktif hale getirmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runOrganizerAction(id, `/api/Admin/organizers/${id}/reactivate`);
   }
 

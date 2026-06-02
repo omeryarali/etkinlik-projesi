@@ -51,11 +51,27 @@ export default function EventsPage() {
   }
 
   async function approveEvent(id) {
+    const confirmed = window.confirm(
+      "Bu etkinliği onaylamak istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+     return;
+    }
+
     await runEventAction(id, `/api/Admin/events/${id}/approve`);
   }
 
   async function rejectEvent(id) {
-    await runEventAction(id, `/api/Admin/events/${id}/reject`);
+    const confirmed = window.confirm(
+      "Bu etkinliği reddetmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+  await runEventAction(id, `/api/Admin/events/${id}/reject`);
   }
 
   async function runEventAction(id, path) {

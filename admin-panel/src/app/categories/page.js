@@ -80,10 +80,26 @@ export default function CategoriesPage() {
   }
 
   async function activateCategory(id) {
+    const confirmed = window.confirm(
+      "Bu kategoriyi aktif hale getirmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runCategoryAction(id, `/api/Category/${id}/activate`);
   }
 
   async function deactivateCategory(id) {
+    const confirmed = window.confirm(
+      "Bu kategoriyi pasif hale getirmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runCategoryAction(id, `/api/Category/${id}/deactivate`);
   }
 

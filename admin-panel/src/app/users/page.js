@@ -51,10 +51,26 @@ export default function UsersPage() {
   }
 
   async function activateUser(id) {
+    const confirmed = window.confirm(
+      "Bu kullanıcıyı aktif hale getirmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runUserAction(id, `/api/Admin/users/${id}/activate`);
   }
 
   async function deactivateUser(id) {
+    const confirmed = window.confirm(
+      "Bu kullanıcıyı pasif hale getirmek istediğinize emin misiniz?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await runUserAction(id, `/api/Admin/users/${id}/deactivate`);
   }
 
