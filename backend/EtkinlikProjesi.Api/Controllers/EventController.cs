@@ -600,32 +600,62 @@ public class EventController : ControllerBase
 
     [Authorize(Roles = "Organizer")]
     [HttpGet("{id}/participants")]
-    public async Task<IActionResult> GetEventParticipants(int id)
+    public async Task<IActionResult> GetEventParticipants(
+    int id,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 20)
     {
+        if (page <= 0)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 20;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userIdString))
+        {
             return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
 
         var userId = int.Parse(userIdString);
 
-        // Bu etkinlik bu organizatöre mi ait?
         var organizerProfile = await _context.OrganizerProfiles
-            .FirstOrDefaultAsync(x => x.UserId == userId);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.Status == "Approved");
 
         if (organizerProfile == null)
-            return BadRequest("Organizatör profiliniz bulunamadı.");
+        {
+            return BadRequest("Onaylı organizatör profiliniz bulunamadı.");
+        }
 
         var eventItem = await _context.Events
             .FirstOrDefaultAsync(x => x.Id == id && x.OrganizerProfileId == organizerProfile.Id);
 
         if (eventItem == null)
-            return NotFound("Etkinlik bulunamadı veya bu etkinlik size ait değil.");
+        {
+            return NotFound("Etkinlik bulunamadı veya bu etkinliğin katılımcılarını görme yetkiniz yok.");
+        }
 
-        var participants = await _context.EventParticipants
+        var query = _context.EventParticipants
             .Include(x => x.User)
-            .Where(x => x.EventId == id && x.Status == "Joined")
-            .OrderBy(x => x.JoinedAt)
+            .Where(x => x.EventId == id)
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+
+        var participants = await query
+            .OrderByDescending(x => x.JoinedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new EventParticipantResponse
             {
                 UserId = x.UserId,
@@ -635,7 +665,20 @@ public class EventController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(participants);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new PagedResponse<EventParticipantResponse>
+        {
+            Items = participants,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            HasPreviousPage = page > 1,
+            HasNextPage = page < totalPages
+        };
+
+        return Ok(response);
     }
 
     [Authorize(Roles = "Organizer")]
