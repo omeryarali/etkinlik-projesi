@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import { apiFetch } from "../../lib/api";
 import { getAdminToken } from "../../lib/auth";
 
 export default function EventsPage() {
+  const searchParams = useSearchParams();
+
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
@@ -120,7 +123,11 @@ export default function EventsPage() {
   }
 
   useEffect(() => {
-    loadEvents("", 1);
+    const statusFromUrl = searchParams.get("status") || "";
+
+    setStatus(statusFromUrl);
+    setPage(1);
+    loadEvents(statusFromUrl, 1);
   }, []);
 
   return (
@@ -203,9 +210,7 @@ export default function EventsPage() {
               <tbody className="divide-y">
                 {events.map((event) => (
                   <tr key={event.id}>
-                    <td className="px-4 py-3 text-gray-600">
-                      {event.id}
-                    </td>
+                    <td className="px-4 py-3 text-gray-600">{event.id}</td>
 
                     <td className="px-4 py-3 min-w-64">
                       <div>
@@ -339,9 +344,7 @@ function EventDetailModal({
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
         <div className="border-b px-6 py-4 flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-xl font-bold text-gray-800">
-              {event.title}
-            </h3>
+            <h3 className="text-xl font-bold text-gray-800">{event.title}</h3>
             <p className="text-sm text-gray-500 mt-1">
               Etkinlik ID: {event.id}
             </p>
@@ -373,7 +376,10 @@ function EventDetailModal({
           <InfoSection title="Tarih ve Konum">
             <InfoRow label="Başlangıç" value={formatDate(event.startDate)} />
             <InfoRow label="Bitiş" value={formatDate(event.endDate)} />
-            <InfoRow label="Şehir / İlçe" value={`${event.city} / ${event.district}`} />
+            <InfoRow
+              label="Şehir / İlçe"
+              value={`${event.city} / ${event.district}`}
+            />
             <InfoRow label="Konum Adı" value={event.locationName} />
             <InfoRow label="Adres" value={event.address} />
             <InfoRow
@@ -391,7 +397,10 @@ function EventDetailModal({
               label="Kontenjan"
               value={`${event.participantCount} / ${event.capacity}`}
             />
-            <InfoRow label="Ücret Durumu" value={event.isPaid ? "Ücretli" : "Ücretsiz"} />
+            <InfoRow
+              label="Ücret Durumu"
+              value={event.isPaid ? "Ücretli" : "Ücretsiz"}
+            />
             <InfoRow
               label="Fiyat"
               value={event.isPaid ? `${event.price ?? 0} TL` : "-"}
@@ -431,12 +440,8 @@ function EventDetailModal({
 function InfoSection({ title, children }) {
   return (
     <div>
-      <h4 className="text-sm font-bold text-gray-800 mb-3">
-        {title}
-      </h4>
-      <div className="rounded-lg border divide-y">
-        {children}
-      </div>
+      <h4 className="text-sm font-bold text-gray-800 mb-3">{title}</h4>
+      <div className="rounded-lg border divide-y">{children}</div>
     </div>
   );
 }

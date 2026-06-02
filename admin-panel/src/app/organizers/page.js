@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import { apiFetch } from "../../lib/api";
 import { getAdminToken } from "../../lib/auth";
 
 export default function OrganizersPage() {
+  const searchParams = useSearchParams();
+
   const [organizers, setOrganizers] = useState([]);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
@@ -132,7 +135,11 @@ export default function OrganizersPage() {
   }
 
   useEffect(() => {
-    loadOrganizers("", 1);
+    const statusFromUrl = searchParams.get("status") || "";
+
+    setStatus(statusFromUrl);
+    setPage(1);
+    loadOrganizers(statusFromUrl, 1);
   }, []);
 
   return (
@@ -373,9 +380,18 @@ function OrganizerDetailModal({
           </InfoSection>
 
           <InfoSection title="Konum ve Tarih">
-            <InfoRow label="Şehir / İlçe" value={`${organizer.city} / ${organizer.district}`} />
-            <InfoRow label="Oluşturulma Tarihi" value={formatDate(organizer.createdAt)} />
-            <InfoRow label="Onay Tarihi" value={formatDate(organizer.approvedAt)} />
+            <InfoRow
+              label="Şehir / İlçe"
+              value={`${organizer.city} / ${organizer.district}`}
+            />
+            <InfoRow
+              label="Oluşturulma Tarihi"
+              value={formatDate(organizer.createdAt)}
+            />
+            <InfoRow
+              label="Onay Tarihi"
+              value={formatDate(organizer.approvedAt)}
+            />
           </InfoSection>
 
           <InfoSection title="Red / Durum Bilgisi">
@@ -422,12 +438,8 @@ function OrganizerDetailModal({
 function InfoSection({ title, children }) {
   return (
     <div>
-      <h4 className="text-sm font-bold text-gray-800 mb-3">
-        {title}
-      </h4>
-      <div className="rounded-lg border divide-y">
-        {children}
-      </div>
+      <h4 className="text-sm font-bold text-gray-800 mb-3">{title}</h4>
+      <div className="rounded-lg border divide-y">{children}</div>
     </div>
   );
 }

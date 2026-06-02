@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import { apiFetch } from "../../lib/api";
 import { getAdminToken } from "../../lib/auth";
 
 export default function UsersPage() {
+  const searchParams = useSearchParams();
+
   const [users, setUsers] = useState([]);
   const [role, setRole] = useState("");
   const [page, setPage] = useState(1);
@@ -118,7 +121,11 @@ export default function UsersPage() {
   }
 
   useEffect(() => {
-    loadUsers("", 1);
+    const roleFromUrl = searchParams.get("role") || "";
+
+    setRole(roleFromUrl);
+    setPage(1);
+    loadUsers(roleFromUrl, 1);
   }, []);
 
   return (

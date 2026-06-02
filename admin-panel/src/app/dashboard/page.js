@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
 import { getAdminToken } from "../../lib/auth";
@@ -61,23 +62,23 @@ export default function DashboardPage() {
 
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard title="Toplam Kullanıcı" value={stats.totalUsers} />
-          <StatCard title="Aktif Kullanıcı" value={stats.activeUsers} />
-          <StatCard title="Pasif Kullanıcı" value={stats.passiveUsers} />
-          <StatCard title="Toplam Organizatör" value={stats.totalOrganizers} />
+          <StatCard title="Toplam Kullanıcı" value={stats.totalUsers} href="/users" />
+          <StatCard title="Aktif Kullanıcı" value={stats.activeUsers} href="/users" />
+          <StatCard title="Pasif Kullanıcı" value={stats.passiveUsers} href="/users" />
+          <StatCard title="Toplam Organizatör" value={stats.totalOrganizers} href="/organizers" />
 
-          <StatCard title="Bekleyen Organizatör" value={stats.pendingOrganizers} />
-          <StatCard title="Onaylı Organizatör" value={stats.approvedOrganizers} />
-          <StatCard title="Reddedilen Organizatör" value={stats.rejectedOrganizers} />
-          <StatCard title="Askıdaki Organizatör" value={stats.suspendedOrganizers} />
+          <StatCard title="Bekleyen Organizatör" value={stats.pendingOrganizers} href="/organizers" />
+          <StatCard title="Onaylı Organizatör" value={stats.approvedOrganizers} href="/organizers" />
+          <StatCard title="Reddedilen Organizatör" value={stats.rejectedOrganizers} href="/organizers" />
+          <StatCard title="Askıdaki Organizatör" value={stats.suspendedOrganizers} href="/organizers" />
 
-          <StatCard title="Toplam Etkinlik" value={stats.totalEvents} />
-          <StatCard title="Bekleyen Etkinlik" value={stats.pendingEvents} />
-          <StatCard title="Onaylı Etkinlik" value={stats.approvedEvents} />
-          <StatCard title="Reddedilen Etkinlik" value={stats.rejectedEvents} />
+          <StatCard title="Toplam Etkinlik" value={stats.totalEvents} href="/events" />
+          <StatCard title="Bekleyen Etkinlik" value={stats.pendingEvents} href="/events" />
+          <StatCard title="Onaylı Etkinlik" value={stats.approvedEvents} href="/events" />
+          <StatCard title="Reddedilen Etkinlik" value={stats.rejectedEvents} href="/events" />
 
-          <StatCard title="İptal Etkinlik" value={stats.cancelledEvents} />
-          <StatCard title="Tamamlanan Etkinlik" value={stats.completedEvents} />
+          <StatCard title="İptal Etkinlik" value={stats.cancelledEvents} href="/events" />
+          <StatCard title="Tamamlanan Etkinlik" value={stats.completedEvents} href="/events" />
           <StatCard title="Toplam Katılım Kaydı" value={stats.totalParticipants} />
           <StatCard title="Aktif Katılım" value={stats.joinedParticipants} />
 
@@ -90,11 +91,26 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ title, value }) {
-  return (
-    <div className="rounded-xl bg-white p-5 shadow-sm border">
+function StatCard({ title, value, href }) {
+  const content = (
+    <div className="rounded-xl bg-white p-5 shadow-sm border hover:shadow-md transition">
       <p className="text-sm text-gray-500">{title}</p>
       <p className="mt-2 text-3xl font-bold text-gray-800">{value ?? 0}</p>
+      {href && (
+        <p className="mt-3 text-xs font-medium text-blue-600">
+          Detaylara git
+        </p>
+      )}
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href}>
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
