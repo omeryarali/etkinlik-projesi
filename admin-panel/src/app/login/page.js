@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
 
 export default function LoginPage() {
@@ -8,6 +8,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    const userRaw = localStorage.getItem("adminUser");
+
+    if (!token || !userRaw) {
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userRaw);
+
+      if (user.role === "Admin") {
+        window.location.href = "/dashboard";
+      }
+    } catch {
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();

@@ -2,9 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children, title, description }) {
   const pathname = usePathname();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    const userRaw = localStorage.getItem("adminUser");
+
+    if (!token || !userRaw) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userRaw);
+
+      if (user.role !== "Admin") {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminUser");
+        window.location.href = "/login";
+        return;
+      }
+    } catch {
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+      window.location.href = "/login";
+      return;
+    }
+
+    setCheckingAuth(false);
+  }, []);
 
   function handleLogout() {
     localStorage.removeItem("adminToken");
@@ -34,6 +64,14 @@ export default function AdminLayout({ children, title, description }) {
       href: "/categories",
     },
   ];
+
+  if (checkingAuth) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-gray-600">Yetki kontrol ediliyor...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-100">
