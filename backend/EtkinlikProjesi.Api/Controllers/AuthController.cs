@@ -62,7 +62,11 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            ProfileImageUrl = user.ProfileImageUrl,
             Role = user.Role,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
             Token = token
         };
 
@@ -99,7 +103,11 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            ProfileImageUrl = user.ProfileImageUrl,
             Role = user.Role,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
             Token = token
         };
 
@@ -132,7 +140,11 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            ProfileImageUrl = user.ProfileImageUrl,
             Role = user.Role,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
             Token = string.Empty
         };
 

@@ -425,19 +425,26 @@ public class AdminController : ControllerBase
         {
             TotalUsers = await _context.Users.CountAsync(),
             ActiveUsers = await _context.Users.CountAsync(x => x.IsActive),
+            PassiveUsers = await _context.Users.CountAsync(x => !x.IsActive),
 
             TotalOrganizers = await _context.OrganizerProfiles.CountAsync(),
             PendingOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Pending"),
             ApprovedOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Approved"),
+            RejectedOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Rejected"),
             SuspendedOrganizers = await _context.OrganizerProfiles.CountAsync(x => x.Status == "Suspended"),
 
             TotalEvents = await _context.Events.CountAsync(),
             PendingEvents = await _context.Events.CountAsync(x => x.Status == "Pending"),
             ApprovedEvents = await _context.Events.CountAsync(x => x.Status == "Approved"),
-            CancelledEvents = await _context.Events.CountAsync(x => x.Status == "Cancelled"),
             RejectedEvents = await _context.Events.CountAsync(x => x.Status == "Rejected"),
+            CancelledEvents = await _context.Events.CountAsync(x => x.Status == "Cancelled"),
+            CompletedEvents = await _context.Events.CountAsync(x => x.Status == "Completed"),
 
-            TotalParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "Joined")
+            TotalParticipants = await _context.EventParticipants.CountAsync(),
+            JoinedParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "Joined"),
+            CancelledParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "Cancelled"),
+            AttendedParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "Attended"),
+            NoShowParticipants = await _context.EventParticipants.CountAsync(x => x.Status == "NoShow")
         };
 
         return Ok(stats);
