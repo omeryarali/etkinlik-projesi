@@ -132,7 +132,8 @@ public class EventController : ControllerBase
     public async Task<IActionResult> GetApprovedEvents(
     [FromQuery] string? city,
     [FromQuery] string? district,
-    [FromQuery] int? categoryId)
+    [FromQuery] int? categoryId,
+    [FromQuery] string? dateFilter)
     {
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
@@ -153,6 +154,32 @@ public class EventController : ControllerBase
         if (categoryId.HasValue)
         {
             query = query.Where(x => x.EventCategoryId == categoryId.Value);
+        }
+
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
+        var nextWeek = today.AddDays(7);
+
+        if (!string.IsNullOrWhiteSpace(dateFilter))
+        {
+            switch (dateFilter.ToLower())
+            {
+                case "today":
+                    query = query.Where(x => x.StartDate >= today && x.StartDate < tomorrow);
+                    break;
+
+                case "tomorrow":
+                    query = query.Where(x => x.StartDate >= tomorrow && x.StartDate < tomorrow.AddDays(1));
+                    break;
+
+                case "thisweek":
+                    query = query.Where(x => x.StartDate >= today && x.StartDate < nextWeek);
+                    break;
+
+                case "upcoming":
+                    query = query.Where(x => x.StartDate >= today);
+                    break;
+            }
         }
 
         var events = await query
