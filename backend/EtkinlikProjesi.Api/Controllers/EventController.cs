@@ -134,7 +134,10 @@ public class EventController : ControllerBase
     [FromQuery] string? district,
     [FromQuery] int? categoryId,
     [FromQuery] string? dateFilter,
-    [FromQuery] bool? isPaid)
+    [FromQuery] bool? isPaid,
+    [FromQuery] string? search,
+    [FromQuery] string? sortBy,
+    [FromQuery] bool? onlyAvailable)
     {
         var query = _context.Events
             .Include(x => x.OrganizerProfile)
@@ -155,10 +158,6 @@ public class EventController : ControllerBase
         if (categoryId.HasValue)
         {
             query = query.Where(x => x.EventCategoryId == categoryId.Value);
-        }
-        if (isPaid.HasValue)
-        {
-            query = query.Where(x => x.IsPaid == isPaid.Value);
         }
 
         var today = DateTime.UtcNow.Date;
@@ -187,8 +186,42 @@ public class EventController : ControllerBase
             }
         }
 
+        if (isPaid.HasValue)
+        {
+            query = query.Where(x => x.IsPaid == isPaid.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchPattern = $"%{search}%";
+
+            query = query.Where(x =>
+                EF.Functions.ILike(x.Title, searchPattern) ||
+                EF.Functions.ILike(x.Description, searchPattern) ||
+                EF.Functions.ILike(x.LocationName, searchPattern) ||
+                EF.Functions.ILike(x.Address, searchPattern) ||
+                EF.Functions.ILike(x.OrganizerProfile.OrganizerName, searchPattern)
+            );
+        }
+
+        if (onlyAvailable == true)
+        {
+            query = query.Where(x =>
+                _context.EventParticipants.Count(p => p.EventId == x.Id && p.Status == "Joined") < x.Capacity
+            );
+        }
+
+        query = sortBy?.ToLower() switch
+        {
+            "newest" => query.OrderByDescending(x => x.CreatedAt),
+
+            "popular" => query.OrderByDescending(x =>
+                _context.EventParticipants.Count(p => p.EventId == x.Id && p.Status == "Joined")),
+
+            _ => query.OrderBy(x => x.StartDate)
+        };
+
         var events = await query
-            .OrderBy(x => x.StartDate)
             .Select(x => new EventResponse
             {
                 Id = x.Id,
