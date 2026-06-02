@@ -15,6 +15,20 @@ export async function apiFetch(path, options = {}) {
     },
   });
 
+  if (response.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+      window.location.href = "/login";
+    }
+
+    throw new Error("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
+  }
+
+  if (response.status === 403) {
+    throw new Error("Bu işlem için yetkiniz yok.");
+  }
+
   const contentType = response.headers.get("content-type");
 
   let data;
@@ -25,7 +39,19 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(typeof data === "string" ? data : "İstek başarısız oldu.");
+    if (typeof data === "string") {
+      throw new Error(data || "İstek başarısız oldu.");
+    }
+
+    if (data?.message) {
+      throw new Error(data.message);
+    }
+
+    if (data?.title) {
+      throw new Error(data.title);
+    }
+
+    throw new Error("İstek başarısız oldu.");
   }
 
   return data;
