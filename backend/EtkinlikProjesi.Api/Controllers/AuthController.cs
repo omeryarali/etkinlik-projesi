@@ -138,6 +138,104 @@ public class AuthController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPut("profile")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == userId);
+
+        if (user == null)
+        {
+            return NotFound("Kullanıcı bulunamadı.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.FullName))
+        {
+            return BadRequest("Ad soyad alanı boş olamaz.");
+        }
+
+        user.FullName = request.FullName;
+        user.PhoneNumber = request.PhoneNumber;
+        user.ProfileImageUrl = request.ProfileImageUrl;
+
+        await _context.SaveChangesAsync();
+
+        var response = new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.PhoneNumber,
+            user.ProfileImageUrl,
+            user.Role,
+            user.IsActive,
+            user.CreatedAt
+        };
+
+        return Ok(response);
+    }
+
+    [HttpPut("change-password")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdString))
+        {
+            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+        }
+
+        var userId = int.Parse(userIdString);
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == userId);
+
+        if (user == null)
+        {
+            return NotFound("Kullanıcı bulunamadı.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+        {
+            return BadRequest("Mevcut şifre boş olamaz.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest("Yeni şifre boş olamaz.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest("Yeni şifre en az 6 karakter olmalıdır.");
+        }
+
+        var currentPasswordValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash);
+
+        if (!currentPasswordValid)
+        {
+            return BadRequest("Mevcut şifre hatalı.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Şifre başarıyla güncellendi.");
+    }
+
     private string GenerateJwtToken(User user)
     {
         var issuer = _configuration["Jwt:Issuer"];
