@@ -10,6 +10,7 @@ export default function OrganizersPage() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState(null);
+  const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [error, setError] = useState("");
@@ -100,6 +101,7 @@ export default function OrganizersPage() {
         },
       });
 
+      setSelectedOrganizer(null);
       await loadOrganizers(status, page);
     } catch (err) {
       setError(err.message || "İşlem başarısız oldu.");
@@ -118,6 +120,15 @@ export default function OrganizersPage() {
   function goToPage(newPage) {
     setPage(newPage);
     loadOrganizers(status, newPage);
+  }
+
+  function formatDate(dateValue) {
+    if (!dateValue) return "-";
+
+    return new Date(dateValue).toLocaleString("tr-TR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
   }
 
   useEffect(() => {
@@ -200,6 +211,7 @@ export default function OrganizersPage() {
                     <td className="px-4 py-3 text-gray-600">
                       {organizer.id}
                     </td>
+
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-medium text-gray-800">
@@ -210,20 +222,32 @@ export default function OrganizersPage() {
                         </p>
                       </div>
                     </td>
+
                     <td className="px-4 py-3 text-gray-600">
                       {organizer.organizerType}
                     </td>
+
                     <td className="px-4 py-3 text-gray-600">
                       {organizer.city} / {organizer.district}
                     </td>
+
                     <td className="px-4 py-3 text-gray-600">
                       {organizer.phoneNumber}
                     </td>
+
                     <td className="px-4 py-3">
                       <StatusBadge status={organizer.status} />
                     </td>
+
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedOrganizer(organizer)}
+                          className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+                        >
+                          Detay
+                        </button>
+
                         {organizer.status === "Pending" && (
                           <button
                             onClick={() => approveOrganizer(organizer.id)}
@@ -286,7 +310,136 @@ export default function OrganizersPage() {
           </button>
         </div>
       )}
+
+      {selectedOrganizer && (
+        <OrganizerDetailModal
+          organizer={selectedOrganizer}
+          onClose={() => setSelectedOrganizer(null)}
+          onApprove={approveOrganizer}
+          onSuspend={suspendOrganizer}
+          onReactivate={reactivateOrganizer}
+          actionLoadingId={actionLoadingId}
+          formatDate={formatDate}
+        />
+      )}
     </AdminLayout>
+  );
+}
+
+function OrganizerDetailModal({
+  organizer,
+  onClose,
+  onApprove,
+  onSuspend,
+  onReactivate,
+  actionLoadingId,
+  formatDate,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
+        <div className="border-b px-6 py-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">
+              {organizer.organizerName}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Organizatör ID: {organizer.id} | Kullanıcı ID: {organizer.userId}
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Kapat
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Durum</p>
+            <div className="mt-2">
+              <StatusBadge status={organizer.status} />
+            </div>
+          </div>
+
+          <InfoSection title="Organizatör Bilgileri">
+            <InfoRow label="Organizatör Adı" value={organizer.organizerName} />
+            <InfoRow label="Organizatör Tipi" value={organizer.organizerType} />
+            <InfoRow label="Açıklama" value={organizer.description} />
+            <InfoRow label="Telefon" value={organizer.phoneNumber} />
+            <InfoRow label="Instagram" value={organizer.instagramUrl || "-"} />
+          </InfoSection>
+
+          <InfoSection title="Konum ve Tarih">
+            <InfoRow label="Şehir / İlçe" value={`${organizer.city} / ${organizer.district}`} />
+            <InfoRow label="Oluşturulma Tarihi" value={formatDate(organizer.createdAt)} />
+            <InfoRow label="Onay Tarihi" value={formatDate(organizer.approvedAt)} />
+          </InfoSection>
+
+          <InfoSection title="Red / Durum Bilgisi">
+            <InfoRow label="Red Sebebi" value={organizer.rejectionReason || "-"} />
+          </InfoSection>
+        </div>
+
+        <div className="border-t px-6 py-4 flex justify-end gap-3">
+          {organizer.status === "Pending" && (
+            <button
+              onClick={() => onApprove(organizer.id)}
+              disabled={actionLoadingId === organizer.id}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              Onayla
+            </button>
+          )}
+
+          {organizer.status === "Approved" && (
+            <button
+              onClick={() => onSuspend(organizer.id)}
+              disabled={actionLoadingId === organizer.id}
+              className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-60"
+            >
+              Askıya Al
+            </button>
+          )}
+
+          {organizer.status === "Suspended" && (
+            <button
+              onClick={() => onReactivate(organizer.id)}
+              disabled={actionLoadingId === organizer.id}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            >
+              Aktif Et
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoSection({ title, children }) {
+  return (
+    <div>
+      <h4 className="text-sm font-bold text-gray-800 mb-3">
+        {title}
+      </h4>
+      <div className="rounded-lg border divide-y">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 py-3 text-sm">
+      <p className="font-medium text-gray-600">{label}</p>
+      <p className="sm:col-span-2 text-gray-800 whitespace-pre-wrap">
+        {value || "-"}
+      </p>
+    </div>
   );
 }
 

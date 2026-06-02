@@ -10,6 +10,7 @@ export default function EventsPage() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [error, setError] = useState("");
@@ -56,7 +57,7 @@ export default function EventsPage() {
     );
 
     if (!confirmed) {
-     return;
+      return;
     }
 
     await runEventAction(id, `/api/Admin/events/${id}/approve`);
@@ -71,7 +72,7 @@ export default function EventsPage() {
       return;
     }
 
-  await runEventAction(id, `/api/Admin/events/${id}/reject`);
+    await runEventAction(id, `/api/Admin/events/${id}/reject`);
   }
 
   async function runEventAction(id, path) {
@@ -88,6 +89,7 @@ export default function EventsPage() {
         },
       });
 
+      setSelectedEvent(null);
       await loadEvents(status, page);
     } catch (err) {
       setError(err.message || "İşlem başarısız oldu.");
@@ -250,6 +252,13 @@ export default function EventsPage() {
 
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedEvent(event)}
+                          className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+                        >
+                          Detay
+                        </button>
+
                         {event.status === "Pending" && (
                           <>
                             <button
@@ -302,7 +311,144 @@ export default function EventsPage() {
           </button>
         </div>
       )}
+
+      {selectedEvent && (
+        <EventDetailModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onApprove={approveEvent}
+          onReject={rejectEvent}
+          actionLoadingId={actionLoadingId}
+          formatDate={formatDate}
+        />
+      )}
     </AdminLayout>
+  );
+}
+
+function EventDetailModal({
+  event,
+  onClose,
+  onApprove,
+  onReject,
+  actionLoadingId,
+  formatDate,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
+        <div className="border-b px-6 py-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">
+              {event.title}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Etkinlik ID: {event.id}
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Kapat
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Durum</p>
+            <div className="mt-2">
+              <StatusBadge status={event.status} />
+            </div>
+          </div>
+
+          <InfoSection title="Temel Bilgiler">
+            <InfoRow label="Başlık" value={event.title} />
+            <InfoRow label="Açıklama" value={event.description} />
+            <InfoRow label="Organizatör" value={event.organizerName} />
+            <InfoRow label="Kategori" value={event.categoryName} />
+          </InfoSection>
+
+          <InfoSection title="Tarih ve Konum">
+            <InfoRow label="Başlangıç" value={formatDate(event.startDate)} />
+            <InfoRow label="Bitiş" value={formatDate(event.endDate)} />
+            <InfoRow label="Şehir / İlçe" value={`${event.city} / ${event.district}`} />
+            <InfoRow label="Konum Adı" value={event.locationName} />
+            <InfoRow label="Adres" value={event.address} />
+            <InfoRow
+              label="Koordinat"
+              value={
+                event.latitude && event.longitude
+                  ? `${event.latitude}, ${event.longitude}`
+                  : "-"
+              }
+            />
+          </InfoSection>
+
+          <InfoSection title="Katılım ve Ücret">
+            <InfoRow
+              label="Kontenjan"
+              value={`${event.participantCount} / ${event.capacity}`}
+            />
+            <InfoRow label="Ücret Durumu" value={event.isPaid ? "Ücretli" : "Ücretsiz"} />
+            <InfoRow
+              label="Fiyat"
+              value={event.isPaid ? `${event.price ?? 0} TL` : "-"}
+            />
+          </InfoSection>
+
+          <InfoSection title="Kurallar ve Görsel">
+            <InfoRow label="Kurallar" value={event.rules || "-"} />
+            <InfoRow label="Kapak Görseli" value={event.coverImageUrl || "-"} />
+          </InfoSection>
+        </div>
+
+        {event.status === "Pending" && (
+          <div className="border-t px-6 py-4 flex justify-end gap-3">
+            <button
+              onClick={() => onReject(event.id)}
+              disabled={actionLoadingId === event.id}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              Reddet
+            </button>
+
+            <button
+              onClick={() => onApprove(event.id)}
+              disabled={actionLoadingId === event.id}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              Onayla
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoSection({ title, children }) {
+  return (
+    <div>
+      <h4 className="text-sm font-bold text-gray-800 mb-3">
+        {title}
+      </h4>
+      <div className="rounded-lg border divide-y">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 py-3 text-sm">
+      <p className="font-medium text-gray-600">{label}</p>
+      <p className="sm:col-span-2 text-gray-800 whitespace-pre-wrap">
+        {value || "-"}
+      </p>
+    </div>
   );
 }
 
