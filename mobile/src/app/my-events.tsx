@@ -1,27 +1,15 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { apiFetch } from "../services/apiService";
-import { clearAuthData, getAuthUser } from "../services/authStorage";
-
-type AuthUser = {
-  userId: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  profileImageUrl: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  token: string;
-};
+import { getAuthToken } from "../services/authStorage";
 
 type EventItem = {
   id: number;
@@ -37,8 +25,6 @@ type EventItem = {
   district: string;
   locationName: string;
   address: string;
-  latitude?: number | null;
-  longitude?: number | null;
   capacity: number;
   participantCount: number;
   isPaid: boolean;
@@ -60,44 +46,37 @@ type PagedResponse<T> = {
   hasNextPage: boolean;
 };
 
-export default function HomeScreen() {
+export default function MyEventsScreen() {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(
-    null
-  );
+  const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadInitialData() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const savedUser = await getAuthUser();
-      setUser(savedUser);
-
-      await loadEvents(1, true);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Veriler alınamadı.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function loadEvents(page: number, reset = false) {
     try {
-      if (!reset) {
+      if (reset) {
+        setLoading(true);
+      } else {
         setLoadingMore(true);
       }
 
+      setError("");
+
+      const token = await getAuthToken();
+
+      if (!token) {
+        router.replace("/login" as any);
+        return;
+      }
+
       const data = (await apiFetch(
-        `/api/Event/approved?page=${page}&pageSize=10&dateFilter=upcoming`
+        `/api/Event/my-joined-events?page=${page}&pageSize=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       )) as PagedResponse<EventItem>;
 
       if (reset) {
@@ -111,16 +90,12 @@ export default function HomeScreen() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Etkinlikler alınamadı.");
+        setError("Katıldığınız etkinlikler alınamadı.");
       }
     } finally {
+      setLoading(false);
       setLoadingMore(false);
     }
-  }
-
-  async function handleLogout() {
-    await clearAuthData();
-    setUser(null);
   }
 
   function loadMore() {
@@ -145,63 +120,21 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadInitialData();
+      loadEvents(1, true);
     }, [])
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Etkinlik Projesi</Text>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>← Geri</Text>
+      </TouchableOpacity>
 
-      {user ? (
-        <>
-          <View style={styles.userBox}>
-            <View style={styles.userInfo}>
-              <Text style={styles.userTitle}>Hoş geldin, {user.fullName}</Text>
-              <Text style={styles.userText}>Rol: {user.role}</Text>
-            </View>
+      <Text style={styles.title}>Katıldığım Etkinlikler</Text>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Çıkış</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.myEventsButton}
-            onPress={() => router.push("/my-events" as any)}
-          >
-            <Text style={styles.myEventsButtonText}>
-              Katıldığım Etkinlikler
-            </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.authButtons}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            activeOpacity={0.8}
-            onPress={() => router.push("/login" as any)}
-          >
-            <Text style={styles.primaryButtonText}>Giriş Yap</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            activeOpacity={0.8}
-            onPress={() => router.push("/register" as any)}
-          >
-            <Text style={styles.secondaryButtonText}>Kayıt Ol</Text>
-          </TouchableOpacity>
-        </View>
+      {pageInfo && (
+        <Text style={styles.subtitle}>{pageInfo.totalCount} etkinlik</Text>
       )}
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.subtitle}>Yaklaşan Etkinlikler</Text>
-
-        {pageInfo && (
-          <Text style={styles.countText}>{pageInfo.totalCount} etkinlik</Text>
-        )}
-      </View>
 
       {loading && (
         <View style={styles.centerBox}>
@@ -224,6 +157,11 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          ListEmptyComponent={
+            <Text style={styles.infoText}>
+              Henüz katıldığınız etkinlik bulunmuyor.
+            </Text>
+          }
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.footerLoading}>
@@ -253,9 +191,7 @@ export default function HomeScreen() {
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Tarih:</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(item.startDate)}
-                </Text>
+                <Text style={styles.infoValue}>{formatDate(item.startDate)}</Text>
               </View>
 
               <View style={styles.infoRow}>
@@ -277,9 +213,6 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          ListEmptyComponent={
-            <Text style={styles.infoText}>Yaklaşan etkinlik bulunamadı.</Text>
-          }
         />
       )}
     </View>
@@ -291,107 +224,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F3F4F6",
     padding: 24,
-    paddingTop: 64,
+    paddingTop: 56,
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    marginBottom: 16,
+  },
+  backButtonText: {
+    color: "#2563EB",
+    fontSize: 15,
+    fontWeight: "700",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 26,
+    fontWeight: "800",
     color: "#111827",
-  },
-  sectionHeader: {
-    marginTop: 24,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  countText: {
-    fontSize: 13,
+    marginTop: 6,
+    marginBottom: 18,
     color: "#6B7280",
-  },
-  authButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-  },
-  secondaryButtonText: {
-    color: "#111827",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  userBox: {
-    marginTop: 20,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  userInfo: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  userTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  userText: {
-    marginTop: 4,
     fontSize: 14,
-    color: "#6B7280",
-  },
-  logoutButton: {
-    backgroundColor: "#DC2626",
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-  },
-  logoutButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  myEventsButton: {
-    marginTop: 12,
-    backgroundColor: "#111827",
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: "center",
-  },
-  myEventsButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
   },
   centerBox: {
     marginTop: 24,
@@ -402,11 +255,13 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 14,
     textAlign: "center",
+    marginTop: 24,
   },
   errorBox: {
     backgroundColor: "#FEE2E2",
     borderRadius: 12,
     padding: 14,
+    marginTop: 20,
   },
   errorText: {
     color: "#991B1B",
@@ -414,6 +269,7 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+    marginTop: 18,
   },
   listContent: {
     gap: 12,
