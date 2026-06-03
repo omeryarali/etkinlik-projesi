@@ -218,7 +218,11 @@ export default function HomeScreen() {
             ) : null
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              activeOpacity={0.85}
+              onPress={() => router.push(`/events/${item.id}` as any)}
+            >
               <View style={styles.cardTopRow}>
                 <Text style={styles.categoryBadge}>{item.categoryName}</Text>
                 <Text style={styles.priceText}>
@@ -254,7 +258,7 @@ export default function HomeScreen() {
               <Text style={styles.organizerText}>
                 Organizatör: {item.organizerName}
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={
             <Text style={styles.infoText}>Yaklaşan etkinlik bulunamadı.</Text>
