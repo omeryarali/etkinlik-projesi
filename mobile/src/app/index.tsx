@@ -11,13 +11,6 @@ import {
 import { apiFetch } from "../services/apiService";
 import { clearAuthData, getAuthUser } from "../services/authStorage";
 
-type Category = {
-  id: number;
-  name: string;
-  description?: string;
-  isActive?: boolean;
-};
-
 type AuthUser = {
   userId: number;
   fullName: string;
@@ -30,10 +23,49 @@ type AuthUser = {
   token: string;
 };
 
+type EventItem = {
+  id: number;
+  organizerProfileId: number;
+  organizerName: string;
+  eventCategoryId: number;
+  categoryName: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate?: string | null;
+  city: string;
+  district: string;
+  locationName: string;
+  address: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  capacity: number;
+  participantCount: number;
+  isPaid: boolean;
+  price?: number | null;
+  coverImageUrl: string;
+  rules: string;
+  status: string;
+  createdAt: string;
+  approvedAt?: string | null;
+};
+
+type PagedResponse<T> = {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
 export default function HomeScreen() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   async function loadInitialData() {
@@ -44,8 +76,7 @@ export default function HomeScreen() {
       const savedUser = await getAuthUser();
       setUser(savedUser);
 
-      const data = await apiFetch("/api/Category");
-      setCategories(data || []);
+      await loadEvents(1, true);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -57,9 +88,57 @@ export default function HomeScreen() {
     }
   }
 
+  async function loadEvents(page: number, reset = false) {
+    try {
+      if (!reset) {
+        setLoadingMore(true);
+      }
+
+      const data = (await apiFetch(
+        `/api/Event/approved?page=${page}&pageSize=10&dateFilter=upcoming`
+      )) as PagedResponse<EventItem>;
+
+      if (reset) {
+        setEvents(data.items || []);
+      } else {
+        setEvents((prev) => [...prev, ...(data.items || [])]);
+      }
+
+      setPageInfo(data);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Etkinlikler alınamadı.");
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   async function handleLogout() {
     await clearAuthData();
     setUser(null);
+  }
+
+  function loadMore() {
+    if (!pageInfo?.hasNextPage || loadingMore) {
+      return;
+    }
+
+    loadEvents(pageInfo.page + 1);
+  }
+
+  function formatDate(dateValue: string) {
+    if (!dateValue) return "-";
+
+    return new Date(dateValue).toLocaleString("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   useEffect(() => {
@@ -72,11 +151,13 @@ export default function HomeScreen() {
 
       {user ? (
         <View style={styles.userBox}>
-          <Text style={styles.userTitle}>Hoş geldin, {user.fullName}</Text>
-          <Text style={styles.userText}>Rol: {user.role}</Text>
+          <View>
+            <Text style={styles.userTitle}>Hoş geldin, {user.fullName}</Text>
+            <Text style={styles.userText}>Rol: {user.role}</Text>
+          </View>
 
-          <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Çıkış</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -99,12 +180,18 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Text style={styles.subtitle}>Kategoriler</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.subtitle}>Yaklaşan Etkinlikler</Text>
+
+        {pageInfo && (
+          <Text style={styles.countText}>{pageInfo.totalCount} etkinlik</Text>
+        )}
+      </View>
 
       {loading && (
         <View style={styles.centerBox}>
           <ActivityIndicator />
-          <Text style={styles.infoText}>Kategoriler yükleniyor...</Text>
+          <Text style={styles.infoText}>Etkinlikler yükleniyor...</Text>
         </View>
       )}
 
@@ -116,20 +203,61 @@ export default function HomeScreen() {
 
       {!loading && !error && (
         <FlatList
-          data={categories}
+          data={events}
           keyExtractor={(item) => item.id.toString()}
           style={styles.list}
           contentContainerStyle={styles.listContent}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoading}>
+                <ActivityIndicator />
+                <Text style={styles.infoText}>Daha fazla yükleniyor...</Text>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              <Text style={styles.cardText}>
+              <View style={styles.cardTopRow}>
+                <Text style={styles.categoryBadge}>{item.categoryName}</Text>
+                <Text style={styles.priceText}>
+                  {item.isPaid ? `${item.price ?? 0} TL` : "Ücretsiz"}
+                </Text>
+              </View>
+
+              <Text style={styles.cardTitle}>{item.title}</Text>
+
+              <Text style={styles.cardText} numberOfLines={2}>
                 {item.description || "Açıklama yok"}
+              </Text>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Tarih:</Text>
+                <Text style={styles.infoValue}>{formatDate(item.startDate)}</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Konum:</Text>
+                <Text style={styles.infoValue}>
+                  {item.city} / {item.district}
+                </Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Katılım:</Text>
+                <Text style={styles.infoValue}>
+                  {item.participantCount} / {item.capacity}
+                </Text>
+              </View>
+
+              <Text style={styles.organizerText}>
+                Organizatör: {item.organizerName}
               </Text>
             </View>
           )}
           ListEmptyComponent={
-            <Text style={styles.infoText}>Kategori bulunamadı.</Text>
+            <Text style={styles.infoText}>Yaklaşan etkinlik bulunamadı.</Text>
           }
         />
       )}
@@ -149,12 +277,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
   },
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#111827",
-    marginTop: 24,
-    marginBottom: 12,
+  },
+  countText: {
+    fontSize: 13,
+    color: "#6B7280",
   },
   authButtons: {
     flexDirection: "row",
@@ -194,6 +331,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   userTitle: {
     fontSize: 16,
@@ -206,15 +346,14 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   logoutButton: {
-    marginTop: 14,
     backgroundColor: "#DC2626",
     borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center",
+    paddingVertical: 9,
+    paddingHorizontal: 14,
   },
   logoutButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
   centerBox: {
@@ -225,6 +364,7 @@ const styles = StyleSheet.create({
   infoText: {
     color: "#6B7280",
     fontSize: 14,
+    textAlign: "center",
   },
   errorBox: {
     backgroundColor: "#FEE2E2",
@@ -240,22 +380,70 @@ const styles = StyleSheet.create({
   },
   listContent: {
     gap: 12,
+    paddingBottom: 24,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  categoryBadge: {
+    backgroundColor: "#DBEAFE",
+    color: "#1D4ED8",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  priceText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
     color: "#111827",
   },
   cardText: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 14,
     color: "#6B7280",
+    lineHeight: 20,
+  },
+  infoRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 6,
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  infoValue: {
+    fontSize: 13,
+    color: "#6B7280",
+    flex: 1,
+  },
+  organizerText: {
+    marginTop: 12,
+    fontSize: 13,
+    color: "#4B5563",
+    fontWeight: "600",
+  },
+  footerLoading: {
+    paddingVertical: 16,
+    alignItems: "center",
+    gap: 8,
   },
 });
