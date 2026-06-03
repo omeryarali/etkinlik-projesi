@@ -1,12 +1,15 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { apiFetch } from "../services/apiService";
+import { clearAuthData, getAuthUser } from "../services/authStorage";
 
 type Category = {
   id: number;
@@ -15,15 +18,31 @@ type Category = {
   isActive?: boolean;
 };
 
+type AuthUser = {
+  userId: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  profileImageUrl: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  token: string;
+};
+
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function loadCategories() {
+  async function loadInitialData() {
     try {
       setLoading(true);
       setError("");
+
+      const savedUser = await getAuthUser();
+      setUser(savedUser);
 
       const data = await apiFetch("/api/Category");
       setCategories(data || []);
@@ -31,21 +50,56 @@ export default function HomeScreen() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Kategoriler alınamadı.");
+        setError("Veriler alınamadı.");
       }
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleLogout() {
+    await clearAuthData();
+    setUser(null);
+  }
+
   useEffect(() => {
-    loadCategories();
+    loadInitialData();
   }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Etkinlik Projesi</Text>
-      <Text style={styles.subtitle}>Mobil API bağlantı testi</Text>
+
+      {user ? (
+        <View style={styles.userBox}>
+          <Text style={styles.userTitle}>Hoş geldin, {user.fullName}</Text>
+          <Text style={styles.userText}>Rol: {user.role}</Text>
+
+          <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.authButtons}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            onPress={() => router.push("/login" as any)}
+          >
+            <Text style={styles.primaryButtonText}>Giriş Yap</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={() => router.push("/register" as any)}
+          >
+            <Text style={styles.secondaryButtonText}>Kayıt Ol</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={styles.subtitle}>Kategoriler</Text>
 
       {loading && (
         <View style={styles.centerBox}>
@@ -96,10 +150,72 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   subtitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  authButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: "#2563EB",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  secondaryButtonText: {
+    color: "#111827",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  userBox: {
+    marginTop: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  userTitle: {
     fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  userText: {
+    marginTop: 4,
+    fontSize: 14,
     color: "#6B7280",
-    marginTop: 8,
-    marginBottom: 24,
+  },
+  logoutButton: {
+    marginTop: 14,
+    backgroundColor: "#DC2626",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  logoutButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
   centerBox: {
     marginTop: 24,
