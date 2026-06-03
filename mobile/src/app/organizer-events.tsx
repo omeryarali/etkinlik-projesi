@@ -209,6 +209,12 @@ export default function OrganizerEventsScreen() {
               <Text style={styles.priceText}>
                 {item.isPaid ? `${item.price ?? 0} TL` : "Ücretsiz"}
               </Text>
+              <TouchableOpacity
+                style={styles.participantsButton}
+                onPress={() => router.push(`/event-participants/${item.id}` as any)}
+                >
+                <Text style={styles.participantsButtonText}>Katılımcıları Gör</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           )}
         />
@@ -394,4 +400,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  participantsButton: {
+  marginTop: 12,
+  backgroundColor: "#111827",
+  borderRadius: 12,
+  paddingVertical: 11,
+  alignItems: "center",
+},
+participantsButtonText: {
+  color: "#FFFFFF",
+  fontSize: 14,
+  fontWeight: "800",
+},
 });
