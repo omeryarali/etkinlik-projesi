@@ -21,8 +21,12 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
+    console.log("API ERROR URL:", url);
+    console.log("API ERROR STATUS:", response.status);
+    console.log("API ERROR DATA:", data);
+
     if (typeof data === "string") {
-      throw new Error(data || "İstek başarısız oldu.");
+      throw new Error(data || `İstek başarısız oldu. Status: ${response.status}`);
     }
 
     if (data?.message) {
@@ -33,7 +37,16 @@ export async function apiFetch(path, options = {}) {
       throw new Error(data.title);
     }
 
-    throw new Error("İstek başarısız oldu.");
+    if (data?.errors) {
+      const firstKey = Object.keys(data.errors)[0];
+      const firstError = data.errors[firstKey]?.[0];
+
+      if (firstError) {
+        throw new Error(firstError);
+      }
+    }
+
+    throw new Error(`İstek başarısız oldu. Status: ${response.status}`);
   }
 
   return data;

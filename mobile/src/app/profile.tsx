@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { apiFetch } from "../services/apiService";
 import { getAuthToken } from "../services/authStorage";
@@ -145,6 +145,26 @@ export default function ProfileScreen() {
             Organizatör Başvurusu Yap
             </Text>
         </TouchableOpacity>
+        )}
+        {user.role === "Organizer" && (
+        <TouchableOpacity
+            style={styles.createEventButton}
+            onPress={() => router.push("/create-event" as any)}
+        >
+            <Text style={styles.createEventButtonText}>
+            Etkinlik Oluştur
+            </Text>
+        </TouchableOpacity>
+        )}
+        {user.role === "Organizer" && (
+          <TouchableOpacity
+            style={styles.organizerEventsButton}
+            onPress={() => router.push("/organizer-events" as any)}
+          >
+            <Text style={styles.organizerEventsButtonText}>
+              Oluşturduğum Etkinlikler
+            </Text>
+          </TouchableOpacity>
         )}
       <TouchableOpacity
         style={styles.changePasswordButton}
@@ -327,6 +347,32 @@ const styles = StyleSheet.create({
 },
 organizerApplyButtonText: {
   color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "800",
+},
+createEventButton: {
+  marginTop: 10,
+  backgroundColor: "#16A34A",
+  borderRadius: 14,
+  paddingVertical: 15,
+  alignItems: "center",
+},
+createEventButtonText: {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "800",
+},
+organizerEventsButton: {
+  marginTop: 10,
+  backgroundColor: "#FFFFFF",
+  borderColor: "#16A34A",
+  borderWidth: 1,
+  borderRadius: 14,
+  paddingVertical: 15,
+  alignItems: "center",
+},
+organizerEventsButtonText: {
+  color: "#16A34A",
   fontSize: 16,
   fontWeight: "800",
 },
