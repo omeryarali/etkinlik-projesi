@@ -136,6 +136,22 @@ export default function ProfileScreen() {
       >
         <Text style={styles.editButtonText}>Profili Düzenle</Text>
       </TouchableOpacity>
+        {user.role === "Participant" && (
+        <TouchableOpacity
+            style={styles.organizerApplyButton}
+            onPress={() => router.push("/organizer-apply" as any)}
+        >
+            <Text style={styles.organizerApplyButtonText}>
+            Organizatör Başvurusu Yap
+            </Text>
+        </TouchableOpacity>
+        )}
+      <TouchableOpacity
+        style={styles.changePasswordButton}
+        onPress={() => router.push("/change-password" as any)}
+        >
+        <Text style={styles.changePasswordButtonText}>Şifre Değiştir</Text>
+       </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -287,4 +303,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+  changePasswordButton: {
+    marginTop: 10,
+    marginBottom: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#2563EB",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+    changePasswordButtonText: {
+        color: "#2563EB",
+        fontSize: 16,
+        fontWeight: "800",
+    },
+    organizerApplyButton: {
+  marginTop: 10,
+  backgroundColor: "#111827",
+  borderRadius: 14,
+  paddingVertical: 15,
+  alignItems: "center",
+},
+organizerApplyButtonText: {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "800",
+},
 });
