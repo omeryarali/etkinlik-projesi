@@ -1,2090 +1,462 @@
-\# API Listesi
+<!--
+Etkinlik Projesi dokümantasyonu
+Güncel kapsam: Backend MVP + Admin Panel MVP
+-->
+# API Listesi
 
+Backend local adresi: `http://localhost:5270`  
+Swagger: `http://localhost:5270/swagger`  
+Admin panel local adresi: `http://localhost:3000`
 
+---
 
-Bu dosya, Etkinlik Projesi backend API endpointlerini takip etmek için hazırlanmıştır.
+## Auth
 
+### Register
+`POST /api/Auth/register`
 
+Yeni kullanıcı oluşturur. Varsayılan rol: `Participant`.
 
-Backend temel adresi local geliştirme ortamında:
-
-
-
-```http
-
-http://localhost:5270
-
-```
-
-
-
-\---
-
-
-
-\# Auth
-
-
-
-\## Register
-
-
-
-```http
-
-POST /api/Auth/register
-
-```
-
-
-
-Yeni kullanıcı kaydı oluşturur.
-
-
-
-Kullanıcı ilk kayıt olduğunda varsayılan rolü:
-
-
-
-```text
-
-Participant
-
-```
-
-
-
-olur.
-
-
-
-\### Request
-
-
-
+Request:
 ```json
-
 {
-
-&#x20; "fullName": "Ömer Yaralı",
-
-&#x20; "email": "omer@test.com",
-
-&#x20; "phoneNumber": "05555555555",
-
-&#x20; "password": "123456"
-
+  "fullName": "Ömer Yaralı",
+  "email": "omer@test.com",
+  "phoneNumber": "05555555555",
+  "password": "123456"
 }
-
 ```
 
-
-
-\### Response
-
-
-
+Response:
 ```json
-
 {
-
-&#x20; "userId": 1,
-
-&#x20; "fullName": "Ömer Yaralı",
-
-&#x20; "email": "omer@test.com",
-
-&#x20; "role": "Participant",
-
-&#x20; "token": "JWT\_TOKEN"
-
+  "userId": 1,
+  "fullName": "Ömer Yaralı",
+  "email": "omer@test.com",
+  "phoneNumber": "05555555555",
+  "profileImageUrl": "",
+  "role": "Participant",
+  "isActive": true,
+  "createdAt": "2026-05-31T18:00:00Z",
+  "token": "JWT_TOKEN"
 }
-
 ```
 
+### Login
+`POST /api/Auth/login`
 
-
-\---
-
-
-
-\## Login
-
-
-
-```http
-
-POST /api/Auth/login
-
-```
-
-
-
-Kullanıcı girişi yapar.
-
-
-
-Başarılı girişte kullanıcı bilgileri ve JWT token döner.
-
-
-
-\### Request
-
-
-
+Request:
 ```json
-
 {
-
-&#x20; "email": "omer@test.com",
-
-&#x20; "password": "123456"
-
+  "email": "omer@test.com",
+  "password": "123456"
 }
-
 ```
 
-
-
-\### Response
-
-
-
+Response:
 ```json
-
 {
-
-&#x20; "userId": 1,
-
-&#x20; "fullName": "Ömer Yaralı",
-
-&#x20; "email": "omer@test.com",
-
-&#x20; "role": "Participant",
-
-&#x20; "token": "JWT\_TOKEN"
-
+  "userId": 1,
+  "fullName": "Ömer Yaralı",
+  "email": "omer@test.com",
+  "phoneNumber": "05555555555",
+  "profileImageUrl": "",
+  "role": "Admin",
+  "isActive": true,
+  "createdAt": "2026-05-31T18:00:00Z",
+  "token": "JWT_TOKEN"
 }
-
 ```
 
+### Current User
+`GET /api/Auth/me`
 
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
-\---
+Giriş yapan kullanıcının bilgilerini döndürür.
 
+### Profil Güncelle
+`PUT /api/Auth/profile`
 
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
-\# Organizer
-
-
-
-\## Organizatör Başvurusu Yap
-
-
-
-```http
-
-POST /api/Organizer/apply
-
-```
-
-
-
-Giriş yapan kullanıcı organizatör başvurusu yapar.
-
-
-
-Başvuru ilk olarak:
-
-
-
-```text
-
-Pending
-
-```
-
-
-
-durumunda oluşturulur.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Authorize
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer JWT\_TOKEN
-
-```
-
-
-
-\### Request
-
-
-
+Request:
 ```json
-
 {
-
-&#x20; "organizerName": "Ömer Organizasyon",
-
-&#x20; "organizerType": "Individual",
-
-&#x20; "description": "Bireysel etkinlikler ve halı saha organizasyonları düzenliyorum.",
-
-&#x20; "phoneNumber": "05555555555",
-
-&#x20; "instagramUrl": "https://instagram.com/test",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli"
-
+  "fullName": "Ömer Yaralı Güncel",
+  "phoneNumber": "05550001122",
+  "profileImageUrl": "https://example.com/profile.jpg"
 }
-
 ```
 
+### Şifre Değiştir
+`PUT /api/Auth/change-password`
 
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
-\### Response
-
-
-
+Request:
 ```json
-
 {
-
-&#x20; "id": 1,
-
-&#x20; "userId": 1,
-
-&#x20; "organizerName": "Ömer Organizasyon",
-
-&#x20; "organizerType": "Individual",
-
-&#x20; "description": "Bireysel etkinlikler ve halı saha organizasyonları düzenliyorum.",
-
-&#x20; "phoneNumber": "05555555555",
-
-&#x20; "instagramUrl": "https://instagram.com/test",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli",
-
-&#x20; "status": "Pending",
-
-&#x20; "rejectionReason": "",
-
-&#x20; "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20; "approvedAt": null
-
+  "currentPassword": "123456",
+  "newPassword": "1234567"
 }
-
-```
-
-
-
-\---
-
-
-
-\## Kendi Organizatör Profilim
-
-
-
-```http
-
-GET /api/Organizer/my-profile
-
-```
-
-
-
-Giriş yapan kullanıcının organizatör profilini getirir.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Authorize
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer JWT\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-{
-
-&#x20; "id": 1,
-
-&#x20; "userId": 1,
-
-&#x20; "organizerName": "Ömer Organizasyon",
-
-&#x20; "organizerType": "Individual",
-
-&#x20; "description": "Bireysel etkinlikler ve halı saha organizasyonları düzenliyorum.",
-
-&#x20; "phoneNumber": "05555555555",
-
-&#x20; "instagramUrl": "https://instagram.com/test",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli",
-
-&#x20; "status": "Pending",
-
-&#x20; "rejectionReason": "",
-
-&#x20; "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20; "approvedAt": null
-
-}
-
-```
-
-
-
-\---
-
-
-
-\# Admin - Organizer
-
-
-
-\## Bekleyen Organizatör Başvuruları
-
-
-
-```http
-
-GET /api/Admin/organizers/pending
-
-```
-
-
-
-Admin onay bekleyen organizatör başvurularını listeler.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "userId": 1,
-
-&#x20;   "organizerName": "Ömer Organizasyon",
-
-&#x20;   "organizerType": "Individual",
-
-&#x20;   "description": "Bireysel etkinlikler düzenliyorum.",
-
-&#x20;   "phoneNumber": "05555555555",
-
-&#x20;   "instagramUrl": "https://instagram.com/test",
-
-&#x20;   "city": "Aydın",
-
-&#x20;   "district": "Nazilli",
-
-&#x20;   "status": "Pending",
-
-&#x20;   "rejectionReason": "",
-
-&#x20;   "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20;   "approvedAt": null
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Organizatör Başvurusu Onayla
-
-
-
-```http
-
-PUT /api/Admin/organizers/{id}/approve
-
-```
-
-
-
-Admin organizatör başvurusunu onaylar.
-
-
-
-Onay işleminden sonra:
-
-
-
-```text
-
-OrganizerProfile.Status = Approved
-
-User.Role = Organizer
-
-```
-
-
-
-olur.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```text
-
-Organizatör başvurusu onaylandı.
-
-```
-
-
-
-\---
-
-
-
-\## Organizatör Başvurusu Reddet
-
-
-
-```http
-
-PUT /api/Admin/organizers/{id}/reject
-
-```
-
-
-
-Admin organizatör başvurusunu reddeder.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Request
-
-
-
-```json
-
-{
-
-&#x20; "rejectionReason": "Profil bilgileri eksik."
-
-}
-
-```
-
-
-
-\### Response
-
-
-
-```text
-
-Organizatör başvurusu reddedildi.
-
-```
-
-
-
-\---
-
-
-
-\# Category
-
-
-
-\## Kategorileri Listele
-
-
-
-```http
-
-GET /api/Category
-
-```
-
-## Kategori Aktif Hale Getir
-
-```http
-PUT /api/Category/{id}/activate
-```
-
-Pasif durumdaki kategoriyi tekrar aktif hale getirir.
-
-### Yetki
-
-```text
-Admin
-```
-
-### Header
-
-```http
-Authorization: Bearer ADMIN_TOKEN
-```
-
-### Response
-
-```text
-Kategori aktif hale getirildi.
 ```
 
 ---
 
-## Kategori Pasif Hale Getir
+## Organizer
 
-```http
-PUT /api/Category/{id}/deactivate
-```
+### Organizatör Başvurusu Yap
+`POST /api/Organizer/apply`
 
-Aktif kategoriyi pasif hale getirir.
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
-Pasif hale getirilen kategori kullanıcı tarafındaki kategori listesinde görünmez.
+Başvuru ilk olarak `Pending` durumunda oluşturulur.
 
-Kategori silinmez, sadece:
-
-```text
-IsActive = false
-```
-
-yapılır.
-
-### Yetki
-
-```text
-Admin
-```
-
-### Header
-
-```http
-Authorization: Bearer ADMIN_TOKEN
-```
-
-### Response
-
-```text
-Kategori pasif hale getirildi.
-```
-
-
-
-Aktif etkinlik kategorilerini listeler.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Public
-
-```
-
-
-
-\### Response
-
-
-
+Request:
 ```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "name": "Turnuva",
-
-&#x20;   "description": "Turnuva ve yarışma etkinlikleri",
-
-&#x20;   "isActive": true
-
-&#x20; },
-
-&#x20; {
-
-&#x20;   "id": 2,
-
-&#x20;   "name": "Spor",
-
-&#x20;   "description": "Spor etkinlikleri ve maç organizasyonları",
-
-&#x20;   "isActive": true
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Kategori Oluştur
-
-
-
-```http
-
-POST /api/Category
-
-```
-
-
-
-Yeni etkinlik kategorisi oluşturur.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Request
-
-
-
-```json
-
 {
-
-&#x20; "name": "Turnuva",
-
-&#x20; "description": "Turnuva ve yarışma etkinlikleri"
-
+  "organizerName": "Ömer Organizasyon",
+  "organizerType": "Individual",
+  "description": "Bireysel etkinlikler düzenliyorum.",
+  "phoneNumber": "05555555555",
+  "instagramUrl": "https://instagram.com/test",
+  "city": "Aydın",
+  "district": "Nazilli"
 }
-
 ```
 
+### Kendi Organizatör Profilim
+`GET /api/Organizer/my-profile`
 
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
-\### Response
+### Organizatör Profil Güncelle
+`PUT /api/Organizer/profile`
 
+Yetki: `Authorization: Bearer JWT_TOKEN`
 
+Onaylı organizatör profilini güncellerse profil tekrar `Pending` olur ve kullanıcı rolü `Participant` yapılır.
 
+---
+
+## Category
+
+### Kategorileri Listele
+`GET /api/Category`
+
+Yetki: Public  
+Sadece aktif kategorileri listeler.
+
+### Kategori Oluştur
+`POST /api/Category`
+
+Yetki: `Authorization: Bearer ADMIN_TOKEN`
+
+Request:
 ```json
-
 {
-
-&#x20; "id": 1,
-
-&#x20; "name": "Turnuva",
-
-&#x20; "description": "Turnuva ve yarışma etkinlikleri",
-
-&#x20; "isActive": true
-
+  "name": "Turnuva",
+  "description": "Turnuva ve yarışma etkinlikleri"
 }
-
 ```
 
+### Kategori Aktif Hale Getir
+`PUT /api/Category/{id}/activate`
 
+Yetki: `Authorization: Bearer ADMIN_TOKEN`
 
-\---
+### Kategori Pasif Hale Getir
+`PUT /api/Category/{id}/deactivate`
 
+Yetki: `Authorization: Bearer ADMIN_TOKEN`  
+Kategori silinmez, `IsActive = false` yapılır.
 
+---
 
-\# Event
+## Event
 
+### Onaylı Etkinlikleri Listele
+`GET /api/Event/approved`
 
+Yetki: Public
 
-\## Onaylı Etkinlikleri Listele
-
-
-
+Pagination:
 ```http
-
-GET /api/Event/approved
-
+GET /api/Event/approved?page=1&pageSize=10
 ```
 
-
-
-Onaylı etkinlikleri listeler.
-
-
-
-Bu endpoint mobil uygulamanın ana sayfasında kullanılacaktır.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Public
-
-```
-
-
-
-\### Filtreli Kullanım
-
-
-
+Filtreler:
 ```http
-
 GET /api/Event/approved?city=Aydın
-
+GET /api/Event/approved?district=Nazilli
+GET /api/Event/approved?categoryId=1
+GET /api/Event/approved?dateFilter=today
+GET /api/Event/approved?dateFilter=tomorrow
+GET /api/Event/approved?dateFilter=thisWeek
+GET /api/Event/approved?dateFilter=upcoming
+GET /api/Event/approved?isPaid=false
+GET /api/Event/approved?search=tavla
+GET /api/Event/approved?sortBy=date
+GET /api/Event/approved?sortBy=newest
+GET /api/Event/approved?sortBy=popular
+GET /api/Event/approved?onlyAvailable=true
 ```
 
-
-
+Tüm filtreler:
 ```http
-
-GET /api/Event/approved?city=Aydın\&district=Nazilli
-
+GET /api/Event/approved?city=Aydın&district=Nazilli&categoryId=1&dateFilter=upcoming&isPaid=false&search=tavla&sortBy=popular&onlyAvailable=true&page=1&pageSize=10
 ```
 
-
-
-```http
-
-GET /api/Event/approved?city=Aydın\&district=Nazilli\&categoryId=1
-
-```
-
-
-
-\### Query Parametreleri
-
-
-
-| Parametre  | Tip    | Açıklama                   |
-
-| ---------- | ------ | -------------------------- |
-
-| city       | string | Şehre göre filtreleme      |
-
-| district   | string | İlçeye göre filtreleme     |
-
-| categoryId | int    | Kategoriye göre filtreleme |
-
-
-
-\### Response
-
-
-
+Response:
 ```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "organizerProfileId": 1,
-
-&#x20;   "organizerName": "Ömer Organizasyon",
-
-&#x20;   "eventCategoryId": 1,
-
-&#x20;   "categoryName": "Turnuva",
-
-&#x20;   "title": "Nazilli Tavla Turnuvası",
-
-&#x20;   "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-
-&#x20;   "startDate": "2026-06-01T20:00:00Z",
-
-&#x20;   "endDate": "2026-06-01T23:00:00Z",
-
-&#x20;   "city": "Aydın",
-
-&#x20;   "district": "Nazilli",
-
-&#x20;   "locationName": "X Cafe",
-
-&#x20;   "address": "Nazilli merkez",
-
-&#x20;   "latitude": null,
-
-&#x20;   "longitude": null,
-
-&#x20;   "capacity": 32,
-
-&#x20;   "participantCount": 1,
-
-&#x20;   "isPaid": false,
-
-&#x20;   "price": null,
-
-&#x20;   "coverImageUrl": "",
-
-&#x20;   "rules": "Eleme usulü oynanacaktır.",
-
-&#x20;   "status": "Approved",
-
-&#x20;   "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20;   "approvedAt": "2026-05-31T18:10:00Z"
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Etkinlik Detayı
-
-
-
-```http
-
-GET /api/Event/{id}
-
-```
-
-
-
-Onaylı etkinliğin detayını getirir.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Public
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
 {
-
-&#x20; "id": 1,
-
-&#x20; "organizerProfileId": 1,
-
-&#x20; "organizerName": "Ömer Organizasyon",
-
-&#x20; "eventCategoryId": 1,
-
-&#x20; "categoryName": "Turnuva",
-
-&#x20; "title": "Nazilli Tavla Turnuvası",
-
-&#x20; "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-
-&#x20; "startDate": "2026-06-01T20:00:00Z",
-
-&#x20; "endDate": "2026-06-01T23:00:00Z",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli",
-
-&#x20; "locationName": "X Cafe",
-
-&#x20; "address": "Nazilli merkez",
-
-&#x20; "latitude": null,
-
-&#x20; "longitude": null,
-
-&#x20; "capacity": 32,
-
-&#x20; "participantCount": 1,
-
-&#x20; "isPaid": false,
-
-&#x20; "price": null,
-
-&#x20; "coverImageUrl": "",
-
-&#x20; "rules": "Eleme usulü oynanacaktır.",
-
-&#x20; "status": "Approved",
-
-&#x20; "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20; "approvedAt": "2026-05-31T18:10:00Z"
-
+  "items": [
+    {
+      "id": 1,
+      "organizerProfileId": 1,
+      "organizerName": "Ömer Organizasyon",
+      "eventCategoryId": 1,
+      "categoryName": "Turnuva",
+      "title": "Nazilli Tavla Turnuvası",
+      "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
+      "startDate": "2026-06-01T20:00:00Z",
+      "endDate": "2026-06-01T23:00:00Z",
+      "city": "Aydın",
+      "district": "Nazilli",
+      "locationName": "X Cafe",
+      "address": "Nazilli merkez",
+      "latitude": null,
+      "longitude": null,
+      "capacity": 32,
+      "participantCount": 1,
+      "isPaid": false,
+      "price": null,
+      "coverImageUrl": "",
+      "rules": "Eleme usulü oynanacaktır.",
+      "status": "Approved",
+      "createdAt": "2026-05-31T18:00:00Z",
+      "approvedAt": "2026-05-31T18:10:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "totalCount": 1,
+  "totalPages": 1,
+  "hasPreviousPage": false,
+  "hasNextPage": false
 }
-
 ```
 
+### Etkinlik Detayı
+`GET /api/Event/{id}`
 
+Yetki: Public
 
-\---
+### Etkinlik Oluştur
+`POST /api/Event`
 
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
 
+Etkinlik ilk olarak `Pending` olur.
 
-\## Etkinlik Oluştur
+### Etkinlik Güncelle
+`PUT /api/Event/{id}`
 
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
+Güncellenen etkinlik tekrar `Pending` olur.
 
+### Kendi Etkinliklerim
+`GET /api/Event/my-events?page=1&pageSize=10`
 
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
+
+### Etkinliği İptal Et
+`POST /api/Event/{id}/cancel`
+
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
+Durum: `Cancelled`
+
+### Etkinliği Tamamlandı Yap
+`POST /api/Event/{id}/complete`
+
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
+Durum: `Completed`
+
+### Etkinliğe Katıl
+`POST /api/Event/{id}/join`
+
+Yetki: `Authorization: Bearer JWT_TOKEN`
+
+### Etkinlikten Ayrıl
+`POST /api/Event/{id}/leave`
+
+Yetki: `Authorization: Bearer JWT_TOKEN`  
+Katılım durumu `Cancelled` yapılır.
+
+### Katıldığım Etkinlikler
+`GET /api/Event/my-joined-events?page=1&pageSize=10`
+
+Yetki: `Authorization: Bearer JWT_TOKEN`
+
+### Etkinlik Katılımcıları
+`GET /api/Event/{id}/participants?page=1&pageSize=20`
+
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
+
+### Katılımcıyı Geldi Olarak İşaretle
+`PUT /api/Event/{eventId}/participants/{userId}/attended`
+
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
+Durum: `Attended`
+
+### Katılımcıyı Gelmedi Olarak İşaretle
+`PUT /api/Event/{eventId}/participants/{userId}/no-show`
+
+Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
+Durum: `NoShow`
+
+---
+
+## Admin
+
+Tüm Admin endpointleri için `Authorization: Bearer ADMIN_TOKEN` gereklidir.
+
+### Dashboard İstatistikleri
+`GET /api/Admin/dashboard-stats`
+
+### Kullanıcıları Listele
 ```http
-
-POST /api/Event
-
+GET /api/Admin/users?page=1&pageSize=10
+GET /api/Admin/users?role=Participant&page=1&pageSize=10
+GET /api/Admin/users?role=Organizer&page=1&pageSize=10
+GET /api/Admin/users?role=Admin&page=1&pageSize=10
 ```
 
-
-
-Onaylı organizatör yeni etkinlik oluşturur.
-
-
-
-Etkinlik ilk oluşturulduğunda:
-
-
-
-```text
-
-Pending
-
-```
-
-
-
-durumunda olur. Admin onayından sonra yayına çıkar.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Organizer
-
-```
-
-
-
-\### Header
-
-
-
+### Kullanıcı Aktif/Pasif Yap
 ```http
-
-Authorization: Bearer ORGANIZER\_TOKEN
-
+PUT /api/Admin/users/{id}/activate
+PUT /api/Admin/users/{id}/deactivate
 ```
 
-
-
-\### Request
-
-
-
-```json
-
-{
-
-&#x20; "eventCategoryId": 1,
-
-&#x20; "title": "Nazilli Tavla Turnuvası",
-
-&#x20; "description": "Keyifli bir tavla turnuvası düzenliyoruz. Herkes katılabilir.",
-
-&#x20; "startDate": "2026-06-01T20:00:00",
-
-&#x20; "endDate": "2026-06-01T23:00:00",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli",
-
-&#x20; "locationName": "X Cafe",
-
-&#x20; "address": "Nazilli merkez",
-
-&#x20; "latitude": null,
-
-&#x20; "longitude": null,
-
-&#x20; "capacity": 32,
-
-&#x20; "isPaid": false,
-
-&#x20; "price": null,
-
-&#x20; "coverImageUrl": "",
-
-&#x20; "rules": "Eleme usulü oynanacaktır."
-
-}
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-{
-
-&#x20; "id": 1,
-
-&#x20; "organizerProfileId": 1,
-
-&#x20; "organizerName": "Ömer Organizasyon",
-
-&#x20; "eventCategoryId": 1,
-
-&#x20; "categoryName": "Turnuva",
-
-&#x20; "title": "Nazilli Tavla Turnuvası",
-
-&#x20; "description": "Keyifli bir tavla turnuvası düzenliyoruz. Herkes katılabilir.",
-
-&#x20; "startDate": "2026-06-01T20:00:00Z",
-
-&#x20; "endDate": "2026-06-01T23:00:00Z",
-
-&#x20; "city": "Aydın",
-
-&#x20; "district": "Nazilli",
-
-&#x20; "locationName": "X Cafe",
-
-&#x20; "address": "Nazilli merkez",
-
-&#x20; "latitude": null,
-
-&#x20; "longitude": null,
-
-&#x20; "capacity": 32,
-
-&#x20; "participantCount": 0,
-
-&#x20; "isPaid": false,
-
-&#x20; "price": null,
-
-&#x20; "coverImageUrl": "",
-
-&#x20; "rules": "Eleme usulü oynanacaktır.",
-
-&#x20; "status": "Pending",
-
-&#x20; "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20; "approvedAt": null
-
-}
-
-```
-
-
-
-\---
-
-
-
-\## Kendi Etkinliklerim
-
-
-
+### Organizatörleri Listele
 ```http
-
-GET /api/Event/my-events
-
+GET /api/Admin/organizers?page=1&pageSize=10
+GET /api/Admin/organizers?status=Pending&page=1&pageSize=10
+GET /api/Admin/organizers?status=Approved&page=1&pageSize=10
+GET /api/Admin/organizers?status=Rejected&page=1&pageSize=10
+GET /api/Admin/organizers?status=Suspended&page=1&pageSize=10
 ```
 
+### Bekleyen Organizatör Başvuruları
+`GET /api/Admin/organizers/pending`
 
-
-Giriş yapan organizatörün kendi oluşturduğu etkinlikleri listeler.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Organizer
-
-```
-
-
-
-\### Header
-
-
-
+### Organizatör İşlemleri
 ```http
-
-Authorization: Bearer ORGANIZER\_TOKEN
-
+PUT /api/Admin/organizers/{id}/approve
+PUT /api/Admin/organizers/{id}/reject
+PUT /api/Admin/organizers/{id}/suspend
+PUT /api/Admin/organizers/{id}/reactivate
 ```
 
-
-
-\### Response
-
-
-
-```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "organizerProfileId": 1,
-
-&#x20;   "organizerName": "Ömer Organizasyon",
-
-&#x20;   "eventCategoryId": 1,
-
-&#x20;   "categoryName": "Turnuva",
-
-&#x20;   "title": "Nazilli Tavla Turnuvası",
-
-&#x20;   "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-
-&#x20;   "startDate": "2026-06-01T20:00:00Z",
-
-&#x20;   "endDate": "2026-06-01T23:00:00Z",
-
-&#x20;   "city": "Aydın",
-
-&#x20;   "district": "Nazilli",
-
-&#x20;   "locationName": "X Cafe",
-
-&#x20;   "address": "Nazilli merkez",
-
-&#x20;   "latitude": null,
-
-&#x20;   "longitude": null,
-
-&#x20;   "capacity": 32,
-
-&#x20;   "participantCount": 1,
-
-&#x20;   "isPaid": false,
-
-&#x20;   "price": null,
-
-&#x20;   "coverImageUrl": "",
-
-&#x20;   "rules": "Eleme usulü oynanacaktır.",
-
-&#x20;   "status": "Approved",
-
-&#x20;   "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20;   "approvedAt": "2026-05-31T18:10:00Z"
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Etkinliğe Katıl
-
-
-
+### Etkinlikleri Listele
 ```http
-
-POST /api/Event/{id}/join
-
+GET /api/Admin/events?page=1&pageSize=10
+GET /api/Admin/events?status=Pending&page=1&pageSize=10
+GET /api/Admin/events?status=Approved&page=1&pageSize=10
+GET /api/Admin/events?status=Rejected&page=1&pageSize=10
+GET /api/Admin/events?status=Cancelled&page=1&pageSize=10
+GET /api/Admin/events?status=Completed&page=1&pageSize=10
 ```
 
+### Bekleyen Etkinlikler
+`GET /api/Admin/events/pending`
 
-
-Giriş yapan kullanıcı onaylı etkinliğe katılır.
-
-
-
-Aynı kullanıcı aynı etkinliğe ikinci kez katılamaz.
-
-
-
-Kontenjan doluysa katılım yapılamaz.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Authorize
-
-```
-
-
-
-\### Header
-
-
-
+### Etkinlik Onayla / Reddet
 ```http
-
-Authorization: Bearer JWT\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```text
-
-Etkinliğe katılım başarılı.
-
-```
-
-
-
-\---
-
-
-
-\## Etkinlikten Ayrıl
-
-
-
-```http
-
-POST /api/Event/{id}/leave
-
-```
-
-
-
-Giriş yapan kullanıcı katıldığı etkinlikten ayrılır.
-
-
-
-Katılım kaydı silinmez, durumu:
-
-
-
-```text
-
-Cancelled
-
-```
-
-
-
-olarak güncellenir.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Authorize
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer JWT\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```text
-
-Etkinlik katılımı iptal edildi.
-
-```
-
-
-
-\---
-
-
-
-\## Katıldığım Etkinlikler
-
-
-
-```http
-
-GET /api/Event/my-joined-events
-
-```
-
-
-
-Giriş yapan kullanıcının aktif olarak katıldığı etkinlikleri listeler.
-
-
-
-Sadece `Joined` durumundaki kayıtlar döner.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Authorize
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer JWT\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "organizerProfileId": 1,
-
-&#x20;   "organizerName": "Ömer Organizasyon",
-
-&#x20;   "eventCategoryId": 1,
-
-&#x20;   "categoryName": "Turnuva",
-
-&#x20;   "title": "Nazilli Tavla Turnuvası",
-
-&#x20;   "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-
-&#x20;   "startDate": "2026-06-01T20:00:00Z",
-
-&#x20;   "endDate": "2026-06-01T23:00:00Z",
-
-&#x20;   "city": "Aydın",
-
-&#x20;   "district": "Nazilli",
-
-&#x20;   "locationName": "X Cafe",
-
-&#x20;   "address": "Nazilli merkez",
-
-&#x20;   "latitude": null,
-
-&#x20;   "longitude": null,
-
-&#x20;   "capacity": 32,
-
-&#x20;   "participantCount": 1,
-
-&#x20;   "isPaid": false,
-
-&#x20;   "price": null,
-
-&#x20;   "coverImageUrl": "",
-
-&#x20;   "rules": "Eleme usulü oynanacaktır.",
-
-&#x20;   "status": "Approved",
-
-&#x20;   "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20;   "approvedAt": "2026-05-31T18:10:00Z"
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Etkinlik Katılımcıları
-
-
-
-```http
-
-GET /api/Event/{id}/participants
-
-```
-
-
-
-Organizatör kendi etkinliğinin katılımcılarını listeler.
-
-
-
-Organizatör sadece kendi oluşturduğu etkinliğin katılımcılarını görebilir.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Organizer
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ORGANIZER\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-\[
-
-&#x20; {
-
-&#x20;   "userId": 2,
-
-&#x20;   "fullName": "Test Katılımcı",
-
-&#x20;   "email": "katilimci@test.com",
-
-&#x20;   "joinedAt": "2026-05-31T19:00:00Z"
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\# Admin - Event
-
-
-
-\## Bekleyen Etkinlikler
-
-
-
-```http
-
-GET /api/Admin/events/pending
-
-```
-
-
-
-Admin onay bekleyen etkinlikleri listeler.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```json
-
-\[
-
-&#x20; {
-
-&#x20;   "id": 1,
-
-&#x20;   "organizerProfileId": 1,
-
-&#x20;   "organizerName": "Ömer Organizasyon",
-
-&#x20;   "eventCategoryId": 1,
-
-&#x20;   "categoryName": "Turnuva",
-
-&#x20;   "title": "Nazilli Tavla Turnuvası",
-
-&#x20;   "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-
-&#x20;   "startDate": "2026-06-01T20:00:00Z",
-
-&#x20;   "endDate": "2026-06-01T23:00:00Z",
-
-&#x20;   "city": "Aydın",
-
-&#x20;   "district": "Nazilli",
-
-&#x20;   "locationName": "X Cafe",
-
-&#x20;   "address": "Nazilli merkez",
-
-&#x20;   "latitude": null,
-
-&#x20;   "longitude": null,
-
-&#x20;   "capacity": 32,
-
-&#x20;   "participantCount": 0,
-
-&#x20;   "isPaid": false,
-
-&#x20;   "price": null,
-
-&#x20;   "coverImageUrl": "",
-
-&#x20;   "rules": "Eleme usulü oynanacaktır.",
-
-&#x20;   "status": "Pending",
-
-&#x20;   "createdAt": "2026-05-31T18:00:00Z",
-
-&#x20;   "approvedAt": null
-
-&#x20; }
-
-]
-
-```
-
-
-
-\---
-
-
-
-\## Etkinlik Onayla
-
-
-
-```http
-
 PUT /api/Admin/events/{id}/approve
-
-```
-
-
-
-Admin etkinliği onaylar.
-
-
-
-Onaydan sonra etkinlik:
-
-
-
-```text
-
-Approved
-
-```
-
-
-
-durumuna geçer ve kullanıcılar tarafından listelenebilir.
-
-
-
-\### Yetki
-
-
-
-```text
-
-Admin
-
-```
-
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
-```text
-
-Etkinlik onaylandı.
-
-```
-
-
-
-\---
-
-
-
-\## Etkinlik Reddet
-
-
-
-```http
-
 PUT /api/Admin/events/{id}/reject
-
 ```
 
+---
 
+## Admin Panel Sayfaları
 
-Admin etkinliği reddeder.
+| Sayfa | Açıklama |
+|---|---|
+| `/login` | Admin giriş ekranı |
+| `/dashboard` | Dashboard istatistik ekranı |
+| `/organizers` | Organizatör yönetimi |
+| `/events` | Etkinlik yönetimi |
+| `/users` | Kullanıcı yönetimi |
+| `/categories` | Kategori yönetimi |
 
+URL filtreleri:
 
+```http
+/events?status=Pending
+/events?status=Approved
+/events?status=Rejected
+/events?status=Cancelled
+/events?status=Completed
 
-Reddedilen etkinlik kullanıcı tarafında görünmez.
+/organizers?status=Pending
+/organizers?status=Approved
+/organizers?status=Suspended
 
+/users?role=Participant
+/users?role=Organizer
+/users?role=Admin
+```
 
+---
 
-\### Yetki
+## Durum Değerleri
 
-
-
+### User Role
 ```text
-
+Participant
+Organizer
 Admin
-
 ```
 
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer ADMIN\_TOKEN
-
-```
-
-
-
-\### Response
-
-
-
+### OrganizerProfile Status
 ```text
-
-Etkinlik reddedildi.
-
+Pending
+Approved
+Rejected
+Suspended
 ```
 
-
-
-\---
-
-
-
-\# Test
-
-
-
-\## Token Test Endpointi
-
-
-
-```http
-
-GET /api/Test/me
-
-```
-
-
-
-JWT token içindeki kullanıcı bilgilerini test etmek için kullanılır.
-
-
-
-\### Yetki
-
-
-
+### Event Status
 ```text
-
-Authorize
-
+Pending
+Approved
+Rejected
+Cancelled
+Completed
 ```
 
-
-
-\### Header
-
-
-
-```http
-
-Authorization: Bearer JWT\_TOKEN
-
+### EventParticipant Status
+```text
+Joined
+Cancelled
+Attended
+NoShow
 ```
 
+---
 
-
-\### Response
-
-
+## Pagination Response Formatı
 
 ```json
-
 {
-
-&#x20; "userId": "1",
-
-&#x20; "fullName": "Ömer Yaralı",
-
-&#x20; "email": "omer@test.com",
-
-&#x20; "role": "Participant"
-
+  "items": [],
+  "page": 1,
+  "pageSize": 10,
+  "totalCount": 0,
+  "totalPages": 0,
+  "hasPreviousPage": false,
+  "hasNextPage": false
 }
-
 ```
-
-
-
-\---
-
-
-
-\# Durum Değerleri
-
-
-
-\## User Role
-
-
-
-```text
-
-Participant
-
-Organizer
-
-Admin
-
-```
-
-
-
-\## OrganizerProfile Status
-
-
-
-```text
-
-Pending
-
-Approved
-
-Rejected
-
-Suspended
-
-```
-
-
-
-\## Event Status
-
-
-
-```text
-
-Pending
-
-Approved
-
-Rejected
-
-Cancelled
-
-Completed
-
-```
-
-
-
-\## EventParticipant Status
-
-
-
-```text
-
-Joined
-
-Cancelled
-
-Attended
-
-NoShow
-
-```
-
-
-
