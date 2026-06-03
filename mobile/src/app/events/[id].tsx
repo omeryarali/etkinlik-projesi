@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { apiFetch } from "../../services/apiService";
 import { getAuthToken } from "../../services/authStorage";
@@ -39,12 +39,23 @@ type EventDetail = {
   approvedAt?: string | null;
 };
 
+type PagedResponse<T> = {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
 
   const [event, setEvent] = useState<EventDetail | null>(null);
+  const [hasJoined, setHasJoined] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [joinLoading, setJoinLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function loadEventDetail() {
@@ -54,6 +65,8 @@ export default function EventDetailScreen() {
 
       const data = (await apiFetch(`/api/Event/${id}`)) as EventDetail;
       setEvent(data);
+
+      await checkJoinedStatus(data.id);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -62,6 +75,31 @@ export default function EventDetailScreen() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function checkJoinedStatus(eventId: number) {
+    try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        setHasJoined(false);
+        return;
+      }
+
+      const data = (await apiFetch(
+        "/api/Event/my-joined-events?page=1&pageSize=100",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )) as PagedResponse<EventDetail>;
+
+      const joined = (data.items || []).some((item) => item.id === eventId);
+      setHasJoined(joined);
+    } catch {
+      setHasJoined(false);
     }
   }
 
@@ -88,7 +126,7 @@ export default function EventDetailScreen() {
         return;
       }
 
-      setJoinLoading(true);
+      setActionLoading(true);
 
       await apiFetch(`/api/Event/${id}/join`, {
         method: "POST",
@@ -99,6 +137,7 @@ export default function EventDetailScreen() {
 
       Alert.alert("Başarılı", "Etkinliğe katıldınız.");
 
+      setHasJoined(true);
       await loadEventDetail();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -107,7 +146,77 @@ export default function EventDetailScreen() {
         Alert.alert("Katılım Hatası", "Etkinliğe katılırken hata oluştu.");
       }
     } finally {
-      setJoinLoading(false);
+      setActionLoading(false);
+    }
+  }
+
+  async function handleLeaveEvent() {
+    try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        Alert.alert(
+          "Giriş Gerekli",
+          "Etkinlikten ayrılmak için giriş yapmalısınız.",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+            },
+            {
+              text: "Giriş Yap",
+              onPress: () => router.push("/login" as any),
+            },
+          ]
+        );
+
+        return;
+      }
+
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "Etkinlikten Ayrıl",
+          "Bu etkinlikten ayrılmak istediğinize emin misiniz?",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+              onPress: () => resolve(false),
+            },
+            {
+              text: "Ayrıl",
+              style: "destructive",
+              onPress: () => resolve(true),
+            },
+          ]
+        );
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      setActionLoading(true);
+
+      await apiFetch(`/api/Event/${id}/leave`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert("Başarılı", "Etkinlikten ayrıldınız.");
+
+      setHasJoined(false);
+      await loadEventDetail();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        Alert.alert("Ayrılma Hatası", err.message);
+      } else {
+        Alert.alert("Ayrılma Hatası", "Etkinlikten ayrılırken hata oluştu.");
+      }
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -195,22 +304,36 @@ export default function EventDetailScreen() {
         <Text style={styles.rulesText}>{event.rules || "Kural belirtilmemiş."}</Text>
       </InfoCard>
 
-      <TouchableOpacity
-        style={[
-          styles.joinButton,
-          (joinLoading || isFull()) && styles.joinButtonDisabled,
-        ]}
-        onPress={handleJoinEvent}
-        disabled={joinLoading || isFull()}
-      >
-        {joinLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.joinButtonText}>
-            {isFull() ? "Kontenjan Doldu" : "Etkinliğe Katıl"}
-          </Text>
-        )}
-      </TouchableOpacity>
+      {hasJoined ? (
+        <TouchableOpacity
+          style={[styles.leaveButton, actionLoading && styles.buttonDisabled]}
+          onPress={handleLeaveEvent}
+          disabled={actionLoading}
+        >
+          {actionLoading ? (
+            <ActivityIndicator color="#DC2626" />
+          ) : (
+            <Text style={styles.leaveButtonText}>Etkinlikten Ayrıl</Text>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={[
+            styles.joinButton,
+            (actionLoading || isFull()) && styles.buttonDisabled,
+          ]}
+          onPress={handleJoinEvent}
+          disabled={actionLoading || isFull()}
+        >
+          {actionLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.joinButtonText}>
+              {isFull() ? "Kontenjan Doldu" : "Etkinliğe Katıl"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
@@ -364,12 +487,26 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
   },
-  joinButtonDisabled: {
-    opacity: 0.65,
-  },
   joinButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "800",
+  },
+  leaveButton: {
+    marginTop: 6,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DC2626",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  leaveButtonText: {
+    color: "#DC2626",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  buttonDisabled: {
+    opacity: 0.65,
   },
 });

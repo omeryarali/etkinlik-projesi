@@ -174,6 +174,13 @@ export default function HomeScreen() {
               Katıldığım Etkinlikler
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => router.push("/profile" as any)}
+          >
+            <Text style={styles.profileButtonText}>Profilim</Text>
+          </TouchableOpacity>
         </>
       ) : (
         <View style={styles.authButtons}>
@@ -390,6 +397,20 @@ const styles = StyleSheet.create({
   },
   myEventsButtonText: {
     color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  profileButton: {
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#2563EB",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  profileButtonText: {
+    color: "#2563EB",
     fontSize: 14,
     fontWeight: "700",
   },
