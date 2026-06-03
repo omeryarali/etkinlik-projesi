@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,6 +10,7 @@ import {
     View,
 } from "react-native";
 import { apiFetch } from "../../services/apiService";
+import { getAuthToken } from "../../services/authStorage";
 
 type EventDetail = {
   id: number;
@@ -42,6 +44,7 @@ export default function EventDetailScreen() {
 
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [joinLoading, setJoinLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function loadEventDetail() {
@@ -62,6 +65,52 @@ export default function EventDetailScreen() {
     }
   }
 
+  async function handleJoinEvent() {
+    try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        Alert.alert(
+          "Giriş Gerekli",
+          "Etkinliğe katılmak için giriş yapmalısınız.",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+            },
+            {
+              text: "Giriş Yap",
+              onPress: () => router.push("/login" as any),
+            },
+          ]
+        );
+
+        return;
+      }
+
+      setJoinLoading(true);
+
+      await apiFetch(`/api/Event/${id}/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert("Başarılı", "Etkinliğe katıldınız.");
+
+      await loadEventDetail();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        Alert.alert("Katılım Hatası", err.message);
+      } else {
+        Alert.alert("Katılım Hatası", "Etkinliğe katılırken hata oluştu.");
+      }
+    } finally {
+      setJoinLoading(false);
+    }
+  }
+
   function formatDate(dateValue?: string | null) {
     if (!dateValue) return "-";
 
@@ -72,6 +121,12 @@ export default function EventDetailScreen() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function isFull() {
+    if (!event) return false;
+
+    return event.participantCount >= event.capacity;
   }
 
   useEffect(() => {
@@ -140,8 +195,21 @@ export default function EventDetailScreen() {
         <Text style={styles.rulesText}>{event.rules || "Kural belirtilmemiş."}</Text>
       </InfoCard>
 
-      <TouchableOpacity style={styles.joinButton}>
-        <Text style={styles.joinButtonText}>Etkinliğe Katıl</Text>
+      <TouchableOpacity
+        style={[
+          styles.joinButton,
+          (joinLoading || isFull()) && styles.joinButtonDisabled,
+        ]}
+        onPress={handleJoinEvent}
+        disabled={joinLoading || isFull()}
+      >
+        {joinLoading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.joinButtonText}>
+            {isFull() ? "Kontenjan Doldu" : "Etkinliğe Katıl"}
+          </Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -295,6 +363,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
+  },
+  joinButtonDisabled: {
+    opacity: 0.65,
   },
   joinButtonText: {
     color: "#FFFFFF",
