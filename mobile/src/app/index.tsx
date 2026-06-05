@@ -5,6 +5,7 @@ import {
   FlatList,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -60,17 +61,104 @@ type PagedResponse<T> = {
   hasNextPage: boolean;
 };
 
+type EventFilters = {
+  search: string;
+  city: string;
+  district: string;
+  dateFilter: string;
+  paidFilter: string;
+  sortBy: string;
+  onlyAvailable: boolean;
+};
+
+const defaultFilters: EventFilters = {
+  search: "",
+  city: "",
+  district: "",
+  dateFilter: "upcoming",
+  paidFilter: "all",
+  sortBy: "date",
+  onlyAvailable: false,
+};
+
 export default function HomeScreen() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(
     null
   );
+
+  const [search, setSearch] = useState(defaultFilters.search);
+  const [city, setCity] = useState(defaultFilters.city);
+  const [district, setDistrict] = useState(defaultFilters.district);
+  const [dateFilter, setDateFilter] = useState(defaultFilters.dateFilter);
+  const [paidFilter, setPaidFilter] = useState(defaultFilters.paidFilter);
+  const [sortBy, setSortBy] = useState(defaultFilters.sortBy);
+  const [onlyAvailable, setOnlyAvailable] = useState(
+    defaultFilters.onlyAvailable
+  );
+
+  const [appliedFilters, setAppliedFilters] =
+    useState<EventFilters>(defaultFilters);
+
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadInitialData() {
+  function getCurrentFilters(): EventFilters {
+    return {
+      search,
+      city,
+      district,
+      dateFilter,
+      paidFilter,
+      sortBy,
+      onlyAvailable,
+    };
+  }
+
+  function buildEventsUrl(page: number, filters: EventFilters) {
+    const params = new URLSearchParams();
+
+    params.append("page", page.toString());
+    params.append("pageSize", "10");
+
+    if (filters.search.trim()) {
+      params.append("search", filters.search.trim());
+    }
+
+    if (filters.city.trim()) {
+      params.append("city", filters.city.trim());
+    }
+
+    if (filters.district.trim()) {
+      params.append("district", filters.district.trim());
+    }
+
+    if (filters.dateFilter) {
+      params.append("dateFilter", filters.dateFilter);
+    }
+
+    if (filters.paidFilter === "free") {
+      params.append("isPaid", "false");
+    }
+
+    if (filters.paidFilter === "paid") {
+      params.append("isPaid", "true");
+    }
+
+    if (filters.sortBy) {
+      params.append("sortBy", filters.sortBy);
+    }
+
+    if (filters.onlyAvailable) {
+      params.append("onlyAvailable", "true");
+    }
+
+    return `/api/Event/approved?${params.toString()}`;
+  }
+
+  async function loadInitialData(filters = appliedFilters) {
     try {
       setLoading(true);
       setError("");
@@ -78,7 +166,7 @@ export default function HomeScreen() {
       const savedUser = await getAuthUser();
       setUser(savedUser);
 
-      await loadEvents(1, true);
+      await loadEvents(1, true, filters);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -90,15 +178,17 @@ export default function HomeScreen() {
     }
   }
 
-  async function loadEvents(page: number, reset = false) {
+  async function loadEvents(
+    page: number,
+    reset = false,
+    filters = appliedFilters
+  ) {
     try {
       if (!reset) {
         setLoadingMore(true);
       }
 
-      const data = (await apiFetch(
-        `/api/Event/approved?page=${page}&pageSize=10&dateFilter=upcoming`
-      )) as PagedResponse<EventItem>;
+      const data = (await apiFetch(buildEventsUrl(page, filters))) as PagedResponse<EventItem>;
 
       if (reset) {
         setEvents(data.items || []);
@@ -123,12 +213,31 @@ export default function HomeScreen() {
     setUser(null);
   }
 
+  function applyFilters() {
+    const filters = getCurrentFilters();
+    setAppliedFilters(filters);
+    loadInitialData(filters);
+  }
+
+  function clearFilters() {
+    setSearch(defaultFilters.search);
+    setCity(defaultFilters.city);
+    setDistrict(defaultFilters.district);
+    setDateFilter(defaultFilters.dateFilter);
+    setPaidFilter(defaultFilters.paidFilter);
+    setSortBy(defaultFilters.sortBy);
+    setOnlyAvailable(defaultFilters.onlyAvailable);
+
+    setAppliedFilters(defaultFilters);
+    loadInitialData(defaultFilters);
+  }
+
   function loadMore() {
     if (!pageInfo?.hasNextPage || loadingMore) {
       return;
     }
 
-    loadEvents(pageInfo.page + 1);
+    loadEvents(pageInfo.page + 1, false, appliedFilters);
   }
 
   function formatDate(dateValue: string) {
@@ -145,8 +254,8 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadInitialData();
-    }, [])
+      loadInitialData(appliedFilters);
+    }, [appliedFilters])
   );
 
   return (
@@ -201,6 +310,122 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <View style={styles.filterCard}>
+        <Text style={styles.filterTitle}>Etkinlik Ara / Filtrele</Text>
+
+        <TextInput
+          style={styles.input}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Etkinlik ara"
+        />
+
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[styles.input, styles.inputHalf]}
+            value={city}
+            onChangeText={setCity}
+            placeholder="Şehir"
+          />
+
+          <TextInput
+            style={[styles.input, styles.inputHalf]}
+            value={district}
+            onChangeText={setDistrict}
+            placeholder="İlçe"
+          />
+        </View>
+
+        <Text style={styles.filterLabel}>Tarih</Text>
+        <View style={styles.optionRow}>
+          <FilterOption
+            label="Yaklaşan"
+            active={dateFilter === "upcoming"}
+            onPress={() => setDateFilter("upcoming")}
+          />
+          <FilterOption
+            label="Bugün"
+            active={dateFilter === "today"}
+            onPress={() => setDateFilter("today")}
+          />
+          <FilterOption
+            label="Yarın"
+            active={dateFilter === "tomorrow"}
+            onPress={() => setDateFilter("tomorrow")}
+          />
+          <FilterOption
+            label="Bu Hafta"
+            active={dateFilter === "thisWeek"}
+            onPress={() => setDateFilter("thisWeek")}
+          />
+        </View>
+
+        <Text style={styles.filterLabel}>Ücret</Text>
+        <View style={styles.optionRow}>
+          <FilterOption
+            label="Tümü"
+            active={paidFilter === "all"}
+            onPress={() => setPaidFilter("all")}
+          />
+          <FilterOption
+            label="Ücretsiz"
+            active={paidFilter === "free"}
+            onPress={() => setPaidFilter("free")}
+          />
+          <FilterOption
+            label="Ücretli"
+            active={paidFilter === "paid"}
+            onPress={() => setPaidFilter("paid")}
+          />
+        </View>
+
+        <Text style={styles.filterLabel}>Sıralama</Text>
+        <View style={styles.optionRow}>
+          <FilterOption
+            label="Tarih"
+            active={sortBy === "date"}
+            onPress={() => setSortBy("date")}
+          />
+          <FilterOption
+            label="Yeni"
+            active={sortBy === "newest"}
+            onPress={() => setSortBy("newest")}
+          />
+          <FilterOption
+            label="Popüler"
+            active={sortBy === "popular"}
+            onPress={() => setSortBy("popular")}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.availableButton,
+            onlyAvailable && styles.availableButtonActive,
+          ]}
+          onPress={() => setOnlyAvailable((prev) => !prev)}
+        >
+          <Text
+            style={[
+              styles.availableButtonText,
+              onlyAvailable && styles.availableButtonTextActive,
+            ]}
+          >
+            Sadece kontenjanı uygun etkinlikler
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.filterActions}>
+          <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+            <Text style={styles.applyButtonText}>Filtrele</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+            <Text style={styles.clearButtonText}>Temizle</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={styles.sectionHeader}>
         <Text style={styles.subtitle}>Yaklaşan Etkinlikler</Text>
@@ -285,7 +510,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <Text style={styles.infoText}>Yaklaşan etkinlik bulunamadı.</Text>
+            <Text style={styles.infoText}>Filtreye uygun etkinlik bulunamadı.</Text>
           }
         />
       )}
@@ -293,12 +518,38 @@ export default function HomeScreen() {
   );
 }
 
+function FilterOption({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.optionButton, active && styles.optionButtonActive]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.optionButtonText,
+          active && styles.optionButtonTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F3F4F6",
-    padding: 24,
-    paddingTop: 64,
+    padding: 20,
+    paddingTop: 56,
   },
   title: {
     fontSize: 28,
@@ -306,7 +557,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   sectionHeader: {
-    marginTop: 24,
+    marginTop: 18,
     marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -413,6 +664,122 @@ const styles = StyleSheet.create({
     color: "#2563EB",
     fontSize: 14,
     fontWeight: "700",
+  },
+  filterCard: {
+    marginTop: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 12,
+  },
+  input: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#111827",
+    marginBottom: 10,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  inputHalf: {
+    flex: 1,
+  },
+  filterLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#374151",
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  optionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  optionButton: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D1D5DB",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+  optionButtonActive: {
+    backgroundColor: "#2563EB",
+    borderColor: "#2563EB",
+  },
+  optionButtonText: {
+    color: "#374151",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  optionButtonTextActive: {
+    color: "#FFFFFF",
+  },
+  availableButton: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D1D5DB",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  availableButtonActive: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#16A34A",
+  },
+  availableButtonText: {
+    color: "#374151",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  availableButtonTextActive: {
+    color: "#166534",
+  },
+  filterActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: "#2563EB",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  clearButton: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D1D5DB",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  clearButtonText: {
+    color: "#374151",
+    fontSize: 14,
+    fontWeight: "800",
   },
   centerBox: {
     marginTop: 24,
