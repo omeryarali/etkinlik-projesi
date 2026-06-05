@@ -1,12 +1,13 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { apiFetch } from "../services/apiService";
 import { getAuthToken } from "../services/authStorage";
@@ -48,9 +49,12 @@ type PagedResponse<T> = {
 
 export default function OrganizerEventsScreen() {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(null);
+  const [pageInfo, setPageInfo] = useState<PagedResponse<EventItem> | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   async function loadEvents(page: number, reset = false) {
@@ -98,6 +102,118 @@ export default function OrganizerEventsScreen() {
     }
   }
 
+  async function cancelEvent(eventId: number) {
+    try {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "Etkinliği İptal Et",
+          "Bu etkinliği iptal etmek istediğinize emin misiniz?",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+              onPress: () => resolve(false),
+            },
+            {
+              text: "İptal Et",
+              style: "destructive",
+              onPress: () => resolve(true),
+            },
+          ]
+        );
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      const token = await getAuthToken();
+
+      if (!token) {
+        router.replace("/login" as any);
+        return;
+      }
+
+      setActionLoadingId(eventId);
+
+      await apiFetch(`/api/Event/${eventId}/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert("Başarılı", "Etkinlik iptal edildi.");
+
+      await loadEvents(1, true);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        Alert.alert("İptal Hatası", err.message);
+      } else {
+        Alert.alert("İptal Hatası", "Etkinlik iptal edilirken hata oluştu.");
+      }
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function completeEvent(eventId: number) {
+    try {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "Etkinliği Tamamla",
+          "Bu etkinliği tamamlandı olarak işaretlemek istediğinize emin misiniz?",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+              onPress: () => resolve(false),
+            },
+            {
+              text: "Tamamlandı Yap",
+              onPress: () => resolve(true),
+            },
+          ]
+        );
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      const token = await getAuthToken();
+
+      if (!token) {
+        router.replace("/login" as any);
+        return;
+      }
+
+      setActionLoadingId(eventId);
+
+      await apiFetch(`/api/Event/${eventId}/complete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert("Başarılı", "Etkinlik tamamlandı olarak işaretlendi.");
+
+      await loadEvents(1, true);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        Alert.alert("Tamamlama Hatası", err.message);
+      } else {
+        Alert.alert(
+          "Tamamlama Hatası",
+          "Etkinlik tamamlandı yapılırken hata oluştu."
+        );
+      }
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
   function loadMore() {
     if (!pageInfo?.hasNextPage || loadingMore) {
       return;
@@ -116,6 +232,14 @@ export default function OrganizerEventsScreen() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function canCancel(status: string) {
+    return status === "Pending" || status === "Approved";
+  }
+
+  function canComplete(status: string) {
+    return status === "Approved";
   }
 
   useFocusEffect(
@@ -171,51 +295,97 @@ export default function OrganizerEventsScreen() {
             ) : null
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              activeOpacity={0.85}
-              onPress={() => router.push(`/events/${item.id}` as any)}
-            >
-              <View style={styles.cardTopRow}>
-                <Text style={styles.categoryBadge}>{item.categoryName}</Text>
-                <StatusBadge status={item.status} />
-              </View>
+            <View style={styles.card}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push(`/organizer-event-detail/${item.id}` as any)}
+              >
+                <View style={styles.cardTopRow}>
+                  <Text style={styles.categoryBadge}>{item.categoryName}</Text>
+                  <StatusBadge status={item.status} />
+                </View>
 
-              <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardTitle}>{item.title}</Text>
 
-              <Text style={styles.cardText} numberOfLines={2}>
-                {item.description || "Açıklama yok"}
-              </Text>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Tarih:</Text>
-                <Text style={styles.infoValue}>{formatDate(item.startDate)}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Konum:</Text>
-                <Text style={styles.infoValue}>
-                  {item.city} / {item.district}
+                <Text style={styles.cardText} numberOfLines={2}>
+                  {item.description || "Açıklama yok"}
                 </Text>
-              </View>
 
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Katılım:</Text>
-                <Text style={styles.infoValue}>
-                  {item.participantCount} / {item.capacity}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tarih:</Text>
+                  <Text style={styles.infoValue}>
+                    {formatDate(item.startDate)}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Konum:</Text>
+                  <Text style={styles.infoValue}>
+                    {item.city} / {item.district}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Katılım:</Text>
+                  <Text style={styles.infoValue}>
+                    {item.participantCount} / {item.capacity}
+                  </Text>
+                </View>
+
+                <Text style={styles.priceText}>
+                  {item.isPaid ? `${item.price ?? 0} TL` : "Ücretsiz"}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <Text style={styles.priceText}>
-                {item.isPaid ? `${item.price ?? 0} TL` : "Ücretsiz"}
-              </Text>
               <TouchableOpacity
                 style={styles.participantsButton}
-                onPress={() => router.push(`/event-participants/${item.id}` as any)}
-                >
-                <Text style={styles.participantsButtonText}>Katılımcıları Gör</Text>
+                onPress={() =>
+                  router.push(`/event-participants/${item.id}` as any)
+                }
+              >
+                <Text style={styles.participantsButtonText}>
+                  Katılımcıları Gör
+                </Text>
               </TouchableOpacity>
-            </TouchableOpacity>
+
+              {canComplete(item.status) && (
+                <TouchableOpacity
+                  style={[
+                    styles.completeButton,
+                    actionLoadingId === item.id && styles.buttonDisabled,
+                  ]}
+                  onPress={() => completeEvent(item.id)}
+                  disabled={actionLoadingId === item.id}
+                >
+                  {actionLoadingId === item.id ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.completeButtonText}>
+                      Tamamlandı Yap
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {canCancel(item.status) && (
+                <TouchableOpacity
+                  style={[
+                    styles.cancelButton,
+                    actionLoadingId === item.id && styles.buttonDisabled,
+                  ]}
+                  onPress={() => cancelEvent(item.id)}
+                  disabled={actionLoadingId === item.id}
+                >
+                  {actionLoadingId === item.id ? (
+                    <ActivityIndicator color="#DC2626" />
+                  ) : (
+                    <Text style={styles.cancelButtonText}>
+                      Etkinliği İptal Et
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         />
       )}
@@ -262,7 +432,12 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <View style={[styles.statusBadge, styleMap[status] || styles.statusDefault]}>
-      <Text style={[styles.statusText, textColorMap[status] || styles.statusTextDefault]}>
+      <Text
+        style={[
+          styles.statusText,
+          textColorMap[status] || styles.statusTextDefault,
+        ]}
+      >
         {status}
       </Text>
     </View>
@@ -395,21 +570,50 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#16A34A",
   },
+  participantsButton: {
+    marginTop: 12,
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  participantsButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  completeButton: {
+    marginTop: 10,
+    backgroundColor: "#16A34A",
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  completeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  cancelButton: {
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DC2626",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   footerLoading: {
     paddingVertical: 16,
     alignItems: "center",
     gap: 8,
   },
-  participantsButton: {
-  marginTop: 12,
-  backgroundColor: "#111827",
-  borderRadius: 12,
-  paddingVertical: 11,
-  alignItems: "center",
-},
-participantsButtonText: {
-  color: "#FFFFFF",
-  fontSize: 14,
-  fontWeight: "800",
-},
 });
