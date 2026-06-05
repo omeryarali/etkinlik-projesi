@@ -23,8 +23,26 @@ type AuthUser = {
   token: string;
 };
 
+type OrganizerProfile = {
+  id: number;
+  userId: number;
+  organizerName: string;
+  organizerType: string;
+  description: string;
+  phoneNumber: string;
+  instagramUrl?: string;
+  city: string;
+  district: string;
+  status: string;
+  rejectionReason?: string;
+  createdAt: string;
+  approvedAt?: string | null;
+};
+
 export default function ProfileScreen() {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [organizerProfile, setOrganizerProfile] =
+    useState<OrganizerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -40,13 +58,25 @@ export default function ProfileScreen() {
         return;
       }
 
-      const data = (await apiFetch("/api/Auth/me", {
+      const userData = (await apiFetch("/api/Auth/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })) as AuthUser;
 
-      setUser(data);
+      setUser(userData);
+
+      try {
+        const organizerData = (await apiFetch("/api/Organizer/my-profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })) as OrganizerProfile;
+
+        setOrganizerProfile(organizerData);
+      } catch {
+        setOrganizerProfile(null);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -68,6 +98,30 @@ export default function ProfileScreen() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function getOrganizerStatusText(status: string) {
+    if (status === "Pending") {
+      return "Organizatör başvurunuz admin onayı bekliyor.";
+    }
+
+    if (status === "Rejected") {
+      return `Organizatör başvurunuz reddedildi.${
+        organizerProfile?.rejectionReason
+          ? ` Sebep: ${organizerProfile.rejectionReason}`
+          : ""
+      }`;
+    }
+
+    if (status === "Suspended") {
+      return "Organizatör hesabınız askıya alınmış.";
+    }
+
+    if (status === "Approved") {
+      return "Organizatör başvurunuz onaylandı.";
+    }
+
+    return "Organizatör başvuru durumunuz kontrol ediliyor.";
   }
 
   useFocusEffect(
@@ -96,6 +150,10 @@ export default function ProfileScreen() {
       </View>
     );
   }
+
+  const isOrganizer = user.role === "Organizer";
+  const hasOrganizerApplication = organizerProfile !== null;
+  const canApplyOrganizer = user.role === "Participant" && !hasOrganizerApplication;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -130,33 +188,47 @@ export default function ProfileScreen() {
         <InfoRow label="Kayıt Tarihi" value={formatDate(user.createdAt)} />
       </View>
 
+      {hasOrganizerApplication && !isOrganizer && (
+        <View style={styles.organizerStatusCard}>
+          <Text style={styles.organizerStatusTitle}>
+            Organizatör Başvuru Durumu
+          </Text>
+          <Text style={styles.organizerStatusText}>
+            {getOrganizerStatusText(organizerProfile.status)}
+          </Text>
+          <Text style={styles.organizerStatusBadge}>
+            Status: {organizerProfile.status}
+          </Text>
+        </View>
+      )}
+
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => router.push("/profile-edit" as any)}
       >
         <Text style={styles.editButtonText}>Profili Düzenle</Text>
       </TouchableOpacity>
-        {user.role === "Participant" && (
+
+      {canApplyOrganizer && (
         <TouchableOpacity
-            style={styles.organizerApplyButton}
-            onPress={() => router.push("/organizer-apply" as any)}
+          style={styles.organizerApplyButton}
+          onPress={() => router.push("/organizer-apply" as any)}
         >
-            <Text style={styles.organizerApplyButtonText}>
+          <Text style={styles.organizerApplyButtonText}>
             Organizatör Başvurusu Yap
-            </Text>
+          </Text>
         </TouchableOpacity>
-        )}
-        {user.role === "Organizer" && (
-        <TouchableOpacity
+      )}
+
+      {isOrganizer && (
+        <>
+          <TouchableOpacity
             style={styles.createEventButton}
             onPress={() => router.push("/create-event" as any)}
-        >
-            <Text style={styles.createEventButtonText}>
-            Etkinlik Oluştur
-            </Text>
-        </TouchableOpacity>
-        )}
-        {user.role === "Organizer" && (
+          >
+            <Text style={styles.createEventButtonText}>Etkinlik Oluştur</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.organizerEventsButton}
             onPress={() => router.push("/organizer-events" as any)}
@@ -165,13 +237,15 @@ export default function ProfileScreen() {
               Oluşturduğum Etkinlikler
             </Text>
           </TouchableOpacity>
-        )}
+        </>
+      )}
+
       <TouchableOpacity
         style={styles.changePasswordButton}
         onPress={() => router.push("/change-password" as any)}
-        >
+      >
         <Text style={styles.changePasswordButtonText}>Şifre Değiştir</Text>
-       </TouchableOpacity>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -310,9 +384,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#6B7280",
   },
+  organizerStatusCard: {
+    marginTop: 16,
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+  },
+  organizerStatusTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#92400E",
+  },
+  organizerStatusText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#78350F",
+    lineHeight: 20,
+  },
+  organizerStatusBadge: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#92400E",
+  },
   editButton: {
     marginTop: 16,
-    marginBottom: 8,
     backgroundColor: "#2563EB",
     borderRadius: 14,
     paddingVertical: 15,
@@ -320,6 +418,44 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  organizerApplyButton: {
+    marginTop: 10,
+    backgroundColor: "#111827",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  organizerApplyButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  createEventButton: {
+    marginTop: 10,
+    backgroundColor: "#16A34A",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  createEventButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  organizerEventsButton: {
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#16A34A",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  organizerEventsButtonText: {
+    color: "#16A34A",
     fontSize: 16,
     fontWeight: "800",
   },
@@ -333,47 +469,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
   },
-    changePasswordButtonText: {
-        color: "#2563EB",
-        fontSize: 16,
-        fontWeight: "800",
-    },
-    organizerApplyButton: {
-  marginTop: 10,
-  backgroundColor: "#111827",
-  borderRadius: 14,
-  paddingVertical: 15,
-  alignItems: "center",
-},
-organizerApplyButtonText: {
-  color: "#FFFFFF",
-  fontSize: 16,
-  fontWeight: "800",
-},
-createEventButton: {
-  marginTop: 10,
-  backgroundColor: "#16A34A",
-  borderRadius: 14,
-  paddingVertical: 15,
-  alignItems: "center",
-},
-createEventButtonText: {
-  color: "#FFFFFF",
-  fontSize: 16,
-  fontWeight: "800",
-},
-organizerEventsButton: {
-  marginTop: 10,
-  backgroundColor: "#FFFFFF",
-  borderColor: "#16A34A",
-  borderWidth: 1,
-  borderRadius: 14,
-  paddingVertical: 15,
-  alignItems: "center",
-},
-organizerEventsButtonText: {
-  color: "#16A34A",
-  fontSize: 16,
-  fontWeight: "800",
-},
+  changePasswordButtonText: {
+    color: "#2563EB",
+    fontSize: 16,
+    fontWeight: "800",
+  },
 });
