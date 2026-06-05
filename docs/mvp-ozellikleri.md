@@ -1,287 +1,152 @@
-<!--
-Etkinlik Projesi dokümantasyonu
-Güncel kapsam: Backend MVP + Admin Panel MVP
--->
 # MVP Özellikleri
 
-Bu dosya, Etkinlik Projesi'nin ilk çalışabilir sürümünde bulunacak temel özellikleri ve sonraki sürümlere bırakılacak geliştirmeleri takip etmek için hazırlanmıştır.
+Son güncelleme: `2026-06-05`
 
-MVP, yani Minimum Viable Product, projenin en küçük çalışabilir ürün sürümüdür.
+## MVP Hedefi
 
----
+İlk çalışır sürümün hedefi, yerel etkinlik keşfi ve temel yönetim akışlarını üretime yakın biçimde doğrulamaktır.
 
-## MVP Amacı
+MVP sorusu:
 
-> Kullanıcılar bulundukları şehir/ilçedeki etkinlikleri görebilsin, filtreleyebilsin, detayına bakabilsin ve etkinliğe katılabilsin. Organizatörler etkinlik oluşturabilsin. Admin ise organizatörleri, etkinlikleri, kullanıcıları ve kategorileri yönetebilsin.
+> Kullanıcı etkinliği bulabiliyor, katılabiliyor ve organizer tarafı etkinlik yayınlayabiliyor mu?
 
----
+## Kapsamdaki Roller
 
-## Kullanıcı Rolleri
+- `Participant`
+- `Organizer`
+- `Admin`
 
-```text
-Participant
-Organizer
-Admin
-```
+## MVP İçinde Olan Özellikler
 
-### Participant
+### Kimlik Doğrulama ve Profil
 
-- Kayıt olabilir.
-- Giriş yapabilir.
-- Kendi profilini görebilir.
-- Profil bilgilerini güncelleyebilir.
-- Şifresini değiştirebilir.
-- Onaylı etkinlikleri görebilir.
-- Etkinlikleri şehir, ilçe, kategori, tarih, ücret durumu, arama ve kontenjana göre filtreleyebilir.
-- Etkinlik detayına bakabilir.
-- Etkinliğe katılabilir.
-- Etkinlikten ayrılabilir.
-- Katıldığı etkinlikleri görebilir.
-- Organizatör olmak için başvuru yapabilir.
+- Kayıt olma
+- Giriş yapma
+- Mevcut kullanıcıyı görüntüleme
+- Profil güncelleme
+- Şifre değiştirme
 
-### Organizer
+### Organizer Akışı
 
-- Etkinlik oluşturabilir.
-- Kendi etkinliklerini listeleyebilir.
-- Kendi etkinliğini güncelleyebilir.
-- Kendi etkinliğini iptal edebilir.
-- Kendi etkinliğini tamamlandı olarak işaretleyebilir.
-- Kendi etkinliğinin katılımcılarını görebilir.
-- Katılımcıları geldi/gelmedi olarak işaretleyebilir.
+- Organizer başvurusu yapma
+- Kendi organizer profilini görüntüleme
+- Organizer profilini güncelleme
+- Admin onayı sonrası organizer rolü kazanma
+- Askıya alınan organizerin tekrar aktifleştirilmesi
 
-### Admin
+### Kategori Yönetimi
 
-- Dashboard istatistiklerini görebilir.
-- Kullanıcıları listeleyebilir.
-- Kullanıcıları aktif/pasif yapabilir.
-- Organizatörleri onaylayabilir/reddedebilir.
-- Organizatörleri askıya alabilir/tekrar aktif edebilir.
-- Etkinlikleri onaylayabilir/reddedebilir.
-- Kategorileri listeleyebilir.
-- Kategori oluşturabilir.
-- Kategorileri aktif/pasif yapabilir.
+- Aktif kategorileri listeleme
+- Admin tarafından kategori oluşturma
+- Kategoriyi aktif yapma
+- Kategoriyi pasif yapma
 
----
+### Etkinlik Yönetimi
 
-## Backend MVP Durumu
+- Organizer olarak etkinlik oluşturma
+- Organizer olarak etkinlik güncelleme
+- Etkinlik iptal etme
+- Etkinliği tamamlandı yapma
+- Onaylı etkinlikleri public olarak listeleme
+- Şehir, ilçe, kategori, tarih, ücret, arama ve kontenjan filtreleri
+- Etkinlik detay sayfası
 
-```text
-Backend MVP: %92 - %95
-```
+### Katılım Yönetimi
 
-Tamamlanan başlıklar:
+- Etkinliğe katılma
+- Etkinlikten ayrılma
+- Katıldığım etkinlikleri listeleme
+- Organizerin kendi etkinlik katılımcılarını görmesi
+- Katılımcıyı `Attended` veya `NoShow` olarak işaretleme
 
-```text
-ASP.NET Core Web API
-PostgreSQL bağlantısı
-Entity Framework Core migration sistemi
-JWT authentication
-Role-based authorization
-Swagger Bearer token desteği
-CORS ayarı
-Register/Login
-Current user endpointi
-Profil güncelleme
-Şifre değiştirme
-Organizer başvuru sistemi
-Organizer profil güncelleme
-Admin organizer onay/red sistemi
-Admin organizer suspend/reactivate sistemi
-Kategori sistemi
-Kategori aktif/pasif sistemi
-Etkinlik oluşturma
-Etkinlik güncelleme
-Etkinlik iptal
-Etkinlik tamamlama
-Admin etkinlik onay/red sistemi
-Onaylı etkinlik listeleme
-Gelişmiş etkinlik filtreleri
-Pagination
-Etkinlik detay endpointi
-Etkinliğe katılma/ayrılma
-Katıldığım etkinlikler
-Organizatör katılımcı listesi
-Katılımcı geldi/gelmedi işaretleme
-Admin dashboard stats
-Admin kullanıcı listeleme
-Admin kullanıcı aktif/pasif yapma
-Admin etkinlik/organizatör listeleme
-```
+### Admin Yönetimi
 
----
-
-## Admin Panel MVP Durumu
-
-```text
-Admin Panel MVP: %80 civarı
-```
-
-Tamamlanan sayfalar:
-
-```text
-/login
-/dashboard
-/organizers
-/events
-/users
-/categories
-```
-
-Tamamlanan özellikler:
-
-```text
-Admin login
-Admin rol kontrolü
-Token saklama
-Token bozulursa otomatik login'e yönlendirme
-Logout
-Ortak AdminLayout
-Sol menü
-Dashboard kartları
-Dashboard kart linkleri
-URL filtreleri
-Organizatör listeleme/onaylama/askıya alma/aktif etme
-Organizatör detay modalı
-Etkinlik listeleme/onaylama/reddetme
-Etkinlik detay modalı
-Kullanıcı listeleme/aktif-pasif yapma
-Kategori listeleme/ekleme/aktif-pasif yapma
-Pagination
-Status/role filtreleri
-Confirm pencereleri
-API hata yönetimi
-```
-
----
-
-## MVP'de Olacak Ana Özellikler
-
-### Auth Sistemi
-
-```http
-POST /api/Auth/register
-POST /api/Auth/login
-GET /api/Auth/me
-PUT /api/Auth/profile
-PUT /api/Auth/change-password
-```
-
-### Organizatör Sistemi
-
-```http
-POST /api/Organizer/apply
-GET /api/Organizer/my-profile
-PUT /api/Organizer/profile
-GET /api/Admin/organizers
-GET /api/Admin/organizers/pending
-PUT /api/Admin/organizers/{id}/approve
-PUT /api/Admin/organizers/{id}/reject
-PUT /api/Admin/organizers/{id}/suspend
-PUT /api/Admin/organizers/{id}/reactivate
-```
-
-### Kategori Sistemi
-
-```http
-GET /api/Category
-POST /api/Category
-PUT /api/Category/{id}/activate
-PUT /api/Category/{id}/deactivate
-```
-
-### Etkinlik Sistemi
-
-```http
-POST /api/Event
-PUT /api/Event/{id}
-GET /api/Event/my-events
-POST /api/Event/{id}/cancel
-POST /api/Event/{id}/complete
-GET /api/Event/approved
-GET /api/Event/{id}
-```
-
-### Katılım Sistemi
-
-```http
-POST /api/Event/{id}/join
-POST /api/Event/{id}/leave
-GET /api/Event/my-joined-events
-GET /api/Event/{id}/participants
-PUT /api/Event/{eventId}/participants/{userId}/attended
-PUT /api/Event/{eventId}/participants/{userId}/no-show
-```
+- Dashboard istatistikleri
+- Kullanıcı listeleme
+- Kullanıcıyı aktif/pasif yapma
+- Organizer listeleme
+- Organizer onaylama
+- Organizer reddetme
+- Organizer askıya alma
+- Organizeri yeniden aktifleştirme
+- Etkinlik listeleme
+- Etkinlik onaylama
+- Etkinlik reddetme
 
 ### Admin Panel
 
-```text
-/login
-/dashboard
-/organizers
-/events
-/users
-/categories
-```
+- Admin login
+- Yetkisiz kullanıcıyı login sayfasına yönlendirme
+- Dashboard ekranı
+- Organizer yönetim ekranı
+- Event yönetim ekranı
+- User yönetim ekranı
+- Category yönetim ekranı
 
----
+### Mobile
 
-## MVP'de Olmayacak Özellikler
+Mobil uygulama MVP öncesi aktif geliştirme aşamasında.
+
+Repoda mevcut olan ana mobil akışlar:
+
+- Giriş
+- Kayıt
+- Ana sayfada yaklaşan etkinlikler
+- Etkinlik detayı
+- Profil ekranı
+- Profil düzenleme
+- Şifre değiştirme
+- Katıldığım etkinlikler
+- Organizer başvurusu
+- Organizer etkinlik akışları
+
+## Kısmen Tamamlanmış veya Dikkat Gerektiren Alanlar
+
+- Mobil arayüzler mevcut olsa da uçtan uca doğrulama tamamlanmış kabul edilmemeli
+- Kategori yönetimi için admine özel "tüm kategoriler" listeleme endpointi henüz yok
+- Dosya yükleme ve medya yönetimi henüz gerçek altyapıya bağlı değil
+- Ortam değişkenleri ve deploy dokümanı henüz eksik
+
+## MVP Dışında Kalan Özellikler
 
 - Online ödeme
 - Komisyon sistemi
-- Reklam ve öne çıkarma
+- Sponsorlu etkinlik ve öne çıkarma
 - Push notification
-- Gerçek fotoğraf yükleme
+- Gerçek medya yükleme altyapısı
+- Mesajlaşma
 - Yorum ve puanlama
-- Mesajlaşma sistemi
 - Harita entegrasyonu
-- Şifremi unuttum
-- SMS doğrulama
-
----
+- Şifremi unuttum akışı
+- SMS veya e-posta doğrulama
 
 ## MVP Başarı Kriterleri
 
-```text
-Kullanıcı kayıt/giriş yapabiliyor mu?
-JWT token sistemi sorunsuz çalışıyor mu?
-Profil güncelleme ve şifre değiştirme çalışıyor mu?
-Organizatör başvurusu yapılabiliyor mu?
-Admin organizatörü onaylayabiliyor mu?
-Organizatör etkinlik oluşturabiliyor mu?
-Admin etkinliği onaylayabiliyor mu?
-Kullanıcı onaylı etkinlikleri filtreleyebiliyor mu?
-Kullanıcı etkinliğe katılabiliyor mu?
-Kullanıcı etkinlikten ayrılabiliyor mu?
-Katılımcı sayısı doğru geliyor mu?
-Admin panelden temel yönetim yapılabiliyor mu?
-```
-
----
+- Kullanıcı kayıt ve giriş yapabiliyor
+- JWT tabanlı yetkilendirme stabil çalışıyor
+- Organizer başvurusu admin tarafından yönetilebiliyor
+- Organizer etkinlik oluşturabiliyor
+- Admin etkinliği onaylayabiliyor
+- Kullanıcı etkinlikleri filtreleyebiliyor
+- Kullanıcı etkinliğe katılabiliyor ve ayrılabiliyor
+- Organizer katılımcı listesini yönetebiliyor
+- Admin panel temel yönetim görevlerini tamamlayabiliyor
 
 ## İlk Saha Testi Hedefi
 
 ```text
-3 organizatör
+3 organizer
 5 gerçek etkinlik
 50 kullanıcı
 10-20 gerçek katılım
 En az 1 etkinliğin uygulama üzerinden katılımcı toplaması
 ```
 
----
+## MVP Sonrası Öncelikler
 
-## MVP Sonrası Öncelikli Geliştirmeler
-
-```text
-1. Mobil uygulama iskeleti
-2. Mobil auth ekranları
-3. Mobil etkinlik listeleme/detay/katılım ekranları
-4. Backend deploy
-5. Admin panel deploy
-6. Fotoğraf yükleme sistemi
-7. Şifremi unuttum
-8. Harita entegrasyonu
-9. Push notification
-10. Ödeme / komisyon sistemi
-```
+1. Mobil uygulamayı üretim kalitesine taşımak
+2. Backend ve admin panel deploy sürecini oturtmak
+3. Medya yükleme altyapısı eklemek
+4. Şifremi unuttum akışını eklemek
+5. Harita ve konum deneyimini geliştirmek
+6. Bildirim sistemini eklemek

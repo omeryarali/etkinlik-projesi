@@ -1,273 +1,143 @@
-<!--
-Etkinlik Projesi dokümantasyonu
-Güncel kapsam: Backend MVP + Admin Panel MVP
--->
 # Proje Özeti
 
-## Proje Adı
+Son güncelleme: `2026-06-05`
 
-Etkinlik Projesi
+## Projenin Amacı
 
----
+Etkinlik Projesi, kullanıcıların şehir veya ilçe bazında etkinlik keşfedebildiği, organizatörlerin etkinlik yayınlayabildiği ve adminin platformu denetlediği bir etkinlik platformudur.
 
-## Genel Amaç
+Temel kullanıcı sorusu:
 
-Etkinlik Projesi, kullanıcıların bulundukları şehir veya ilçedeki etkinlikleri, turnuvaları ve sosyal organizasyonları kolayca keşfedebileceği bir mobil uygulama olarak planlanmıştır.
+> Bugün bulunduğum yerde hangi etkinlikler var?
 
-Temel soru:
+## Ürün Özeti
 
-> Bugün ilçemde hangi etkinlik veya turnuva var?
+Platform üç ana rol etrafında şekillenir:
 
-Kullanıcılar uygulama üzerinden onaylı etkinlikleri görebilecek, detaylarını inceleyebilecek ve katılmak istedikleri etkinliklere başvuru yapabilecektir.
+- `Participant`: Etkinlik keşfeder, detay görür, etkinliğe katılır.
+- `Organizer`: Organizer başvurusu onaylandıktan sonra etkinlik oluşturur ve katılımcılarını yönetir.
+- `Admin`: Kullanıcı, organizatör, etkinlik ve kategori yönetimini yapar.
 
-Organizatörler etkinlik oluşturabilecek, katılımcı toplayabilecek ve kendi etkinliklerini yönetebilecektir.
+## Repo Kapsamı
 
-Admin ise organizatörleri, etkinlikleri, kullanıcıları ve kategorileri kontrol ederek platformun güvenliğini sağlayacaktır.
+Bu repoda üç ana uygulama bulunur:
 
----
+- `backend/EtkinlikProjesi.Api`: ASP.NET Core Web API
+- `admin-panel`: Next.js tabanlı admin panel
+- `mobile`: Expo / React Native mobil uygulama
 
-## Problem
+## Teknik Yığın
 
-Yerel etkinlikler çoğunlukla Instagram, WhatsApp grupları, afişler, kafe duyuruları veya kişisel çevre üzerinden duyurulmaktadır.
+### Backend
 
-Bu durum şu sorunlara yol açar:
+- `ASP.NET Core Web API`
+- `Entity Framework Core`
+- `PostgreSQL`
+- `JWT Authentication`
+- `Swagger`
 
-- Kullanıcılar yakınındaki etkinliklerden haberdar olamaz.
-- Organizatörler katılımcı toplamakta zorlanır.
-- Etkinlik duyuruları dağınık platformlarda kalır.
-- Katılım yönetimi manuel yapılır.
-- Etkinliklerin güvenilirliği ve güncelliği takip edilemez.
+### Admin Panel
 
----
+- `Next.js 16`
+- `React 19`
+- `Tailwind CSS 4`
 
-## Değer Önerisi
+### Mobile
 
-Katılımcı için:
+- `Expo`
+- `React Native`
+- `expo-router`
+- `AsyncStorage`
 
-> Yakınındaki etkinlikleri tek yerden keşfet, detayını incele ve kolayca katıl.
+## Mevcut Durum
 
-Organizatör için:
+### Backend
 
-> Etkinliğini duyur, katılımcı topla ve katılımcılarını yönet.
+Backend tarafı işlevsel bir MVP seviyesinde.
 
-Admin için:
+Uygulanan ana başlıklar:
 
-> Organizatör ve etkinlikleri kontrol ederek güvenli bir platform oluştur.
+- Kayıt, giriş, profil güncelleme, şifre değiştirme
+- JWT ve rol bazlı yetkilendirme
+- Organizer başvurusu, onay, red, askıya alma, yeniden aktifleştirme
+- Kategori oluşturma ve aktif/pasif yönetimi
+- Etkinlik oluşturma, güncelleme, iptal, tamamlama
+- Public etkinlik listeleme, filtreleme ve detay
+- Etkinliğe katılma, ayrılma ve katılımcı yönetimi
+- Admin dashboard ve listeleme endpointleri
 
----
+### Admin Panel
 
-## Hedef Kullanıcılar
+Admin panel kullanılabilir durumda ve API ile entegre.
 
-### Katılımcılar
+Mevcut sayfalar:
 
-- Tavla turnuvasına katılmak isteyen kişi
-- Halı saha maçı arayan kişi
-- Kutu oyunu etkinliği arayan kişi
-- Satranç turnuvası arayan kişi
-- Sosyal buluşmalara katılmak isteyen kişi
+- `/login`
+- `/dashboard`
+- `/organizers`
+- `/events`
+- `/users`
+- `/categories`
 
-### Organizatörler
+### Mobile
 
-- Kafe sahipleri
-- Bireysel organizatörler
-- Halı saha organizasyonu yapan kişiler
-- Kulüpler
-- Topluluklar
-- Üniversite grupları
-- Dernekler
-- Kurumlar
-- Belediye veya gençlik merkezi gibi yapılar
+Mobil uygulama dokümanlarda daha önce plan aşamasında görünse de repoda aktif geliştirme altında.
 
-### Admin
+Mevcut ekranlar:
 
-- Organizatör başvurularını kontrol eder.
-- Etkinlikleri onaylar veya reddeder.
-- Kullanıcıları yönetir.
-- Kategorileri yönetir.
-- Platform güvenliğini sağlar.
+- `index`
+- `login`
+- `register`
+- `profile`
+- `profile-edit`
+- `change-password`
+- `explore`
+- `my-events`
+- `organizer-apply`
+- `organizer-events`
+- `create-event`
+- `events/[id]`
+- `organizer-event-detail/[id]`
+- `event-participants/[id]`
 
----
-
-## Roller
-
-```text
-Participant
-Organizer
-Admin
-```
-
----
-
-## Temel Akış
+## Kullanıcı Akışı
 
 ```text
 Kullanıcı kayıt olur.
 Kullanıcı giriş yapar.
-Kullanıcı onaylı etkinlikleri görür.
-Kullanıcı isterse organizatör başvurusu yapar.
-Admin panelden organizatör başvurusunu inceler.
-Admin başvuruyu onaylarsa kullanıcı Organizer rolüne geçer.
+Kullanıcı onaylı etkinlikleri listeler.
+Kullanıcı isterse organizer başvurusu yapar.
+Admin organizer başvurusunu inceler.
+Admin onaylarsa kullanıcı Organizer rolüne geçer.
 Organizer etkinlik oluşturur.
 Etkinlik Pending durumunda admin onayına düşer.
 Admin etkinliği onaylar.
 Etkinlik Approved olur.
-Katılımcı etkinliğe katılır.
-Katılımcı isterse etkinlikten ayrılır.
-Organizer katılımcı listesini görür.
-Organizer etkinlik sonrası katılımcıları geldi/gelmedi olarak işaretleyebilir.
+Participant etkinliğe katılır.
+Organizer katılımcıları görür ve yoklama alır.
 ```
-
----
-
-## Teknik Yapı
-
-```text
-Backend: ASP.NET Core Web API
-Veritabanı: PostgreSQL
-ORM: Entity Framework Core
-Authentication: JWT
-API Test: Swagger / Postman
-Admin Panel: Next.js
-Admin Panel Styling: Tailwind CSS
-Versiyon Kontrol: GitHub
-```
-
-İlerleyen aşamalar:
-
-```text
-Mobil Uygulama: React Native / Expo
-Bildirim: Firebase Cloud Messaging
-Dosya Depolama: Firebase Storage / Cloudflare R2 / AWS S3
-Deploy: Render / Railway / Vercel vb.
-```
-
----
 
 ## Proje Yapısı
 
 ```text
 EtkinlikProjesi
-├── backend
-│   └── EtkinlikProjesi.Api
-├── admin-panel
-│   └── Next.js projesi
-├── docs
-└── mobile
-    └── ileride oluşturulacak
+|-- backend
+|   `-- EtkinlikProjesi.Api
+|-- admin-panel
+|-- mobile
+`-- docs
 ```
 
----
+## Yakın Vadeli Öncelikler
 
-## Backend Durumu
+- Backend yapılandırmasını güvenli hale getirmek
+- Admin panel ve mobilde bozuk karakter sorunlarını temizlemek
+- Mobil uygulama ile backend akışlarını uçtan uca doğrulamak
+- Ortam değişkenleri ve kurulum adımlarını netleştirmek
+- Deploy hazırlıklarını yapmak
 
-```text
-Backend MVP: %92 - %95
-```
+## Notlar
 
-Tamamlanan ana başlıklar:
-
-```text
-Auth
-JWT
-Rol bazlı yetkilendirme
-Profil güncelleme
-Şifre değiştirme
-Organizer başvuru/onay/red
-Organizer askıya alma/aktif etme
-Kategori yönetimi
-Etkinlik oluşturma/güncelleme/iptal/tamamlama
-Admin etkinlik onayı/red
-Gelişmiş etkinlik filtreleme
-Pagination
-Katılım sistemi
-Katılımcı yoklama sistemi
-Admin dashboard
-Admin kullanıcı/etkinlik/organizatör listeleme
-Swagger + CORS
-```
-
----
-
-## Admin Panel Durumu
-
-```text
-Admin Panel MVP: %80 civarı
-```
-
-Çalışan sayfalar:
-
-```text
-/login
-/dashboard
-/organizers
-/events
-/users
-/categories
-```
-
-Özellikler:
-
-```text
-Admin login
-Auth guard
-Token helper
-API hata yönetimi
-Dashboard kartları
-URL filtreleri
-Detay modalları
-Confirm pencereleri
-Pagination
-```
-
----
-
-## Genel Proje Durumu
-
-```text
-Backend MVP: %92 - %95
-Admin Panel MVP: %80 civarı
-Mobil Uygulama: %0
-Genel Proje: %60 civarı
-```
-
----
-
-## İlk Saha Testi Hedefi
-
-```text
-3 organizatör
-5 gerçek etkinlik
-50 kullanıcı
-10-20 gerçek katılım
-En az 1 etkinliğin uygulama üzerinden katılımcı toplaması
-```
-
----
-
-## Para Kazanma
-
-İlk MVP'de para kazanma öncelikli değildir.
-
-İlk amaç:
-
-```text
-Kullanıcı kazanmak
-Organizatör kazanmak
-Gerçek etkinlik akışını test etmek
-```
-
-Sonraki modeller:
-
-- Öne çıkarılmış etkinlik
-- Yerel reklam alanları
-- Organizatör abonelik sistemi
-- Etkinlik başına küçük komisyon
-- Sponsorlu mekan veya kategori
-
----
-
-## Genel Değerlendirme
-
-Etkinlik Projesi, yerel etkinlikleri ve sosyal organizasyonları tek platformda toplamayı hedefleyen bir uygulamadır.
-
-Backend ve admin panel tarafında güçlü bir MVP seviyesine gelmiştir. Bundan sonraki ana aşama mobil uygulama tarafına başlamak, ardından deploy ve saha testi sürecine geçmektir.
+- `appsettings.json` içinde bağlantı bilgileri ve JWT anahtarı şu an placeholder durumda.
+- `GET /api/Category` endpointi yalnızca aktif kategorileri döndürür.
+- Dokümanlarda kaynak doğruluk önceliği her zaman koddadır.

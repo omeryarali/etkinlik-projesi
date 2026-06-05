@@ -1,23 +1,48 @@
-<!--
-Etkinlik Projesi dokümantasyonu
-Güncel kapsam: Backend MVP + Admin Panel MVP
--->
 # API Listesi
 
-Backend local adresi: `http://localhost:5270`  
-Swagger: `http://localhost:5270/swagger`  
-Admin panel local adresi: `http://localhost:3000`
+Son güncelleme: `2026-06-05`
 
----
+Bu belge, repodaki mevcut backend controller'ları baz alınarak hazırlanmıştır.
+
+## Lokal Adresler
+
+- Backend: `http://localhost:5270`
+- Swagger: `http://localhost:5270/swagger`
+- Admin panel: `http://localhost:3000`
+- Mobile Android emulator API adresi: `http://10.0.2.2:5270`
+
+## Kimlik Doğrulama
+
+JWT kullanılan endpointlerde aşağıdaki header beklenir:
+
+```http
+Authorization: Bearer <token>
+```
+
+## Ortak Pagination Formatı
+
+Liste endpointlerinin çoğu aşağıdaki yapıyı döndürür:
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "pageSize": 10,
+  "totalCount": 0,
+  "totalPages": 0,
+  "hasPreviousPage": false,
+  "hasNextPage": false
+}
+```
 
 ## Auth
 
-### Register
-`POST /api/Auth/register`
+### `POST /api/Auth/register`
 
-Yeni kullanıcı oluşturur. Varsayılan rol: `Participant`.
+Yeni kullanıcı oluşturur. Varsayılan rol `Participant` olur.
 
-Request:
+Örnek istek:
+
 ```json
 {
   "fullName": "Ömer Yaralı",
@@ -27,60 +52,22 @@ Request:
 }
 ```
 
-Response:
-```json
-{
-  "userId": 1,
-  "fullName": "Ömer Yaralı",
-  "email": "omer@test.com",
-  "phoneNumber": "05555555555",
-  "profileImageUrl": "",
-  "role": "Participant",
-  "isActive": true,
-  "createdAt": "2026-05-31T18:00:00Z",
-  "token": "JWT_TOKEN"
-}
-```
+### `POST /api/Auth/login`
 
-### Login
-`POST /api/Auth/login`
+E-posta ve şifre ile giriş yapar.
 
-Request:
-```json
-{
-  "email": "omer@test.com",
-  "password": "123456"
-}
-```
+### `GET /api/Auth/me`
 
-Response:
-```json
-{
-  "userId": 1,
-  "fullName": "Ömer Yaralı",
-  "email": "omer@test.com",
-  "phoneNumber": "05555555555",
-  "profileImageUrl": "",
-  "role": "Admin",
-  "isActive": true,
-  "createdAt": "2026-05-31T18:00:00Z",
-  "token": "JWT_TOKEN"
-}
-```
+Yetki: giriş yapmış kullanıcı
 
-### Current User
-`GET /api/Auth/me`
+Giriş yapan kullanıcının özet profilini döndürür.
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+### `PUT /api/Auth/profile`
 
-Giriş yapan kullanıcının bilgilerini döndürür.
+Yetki: giriş yapmış kullanıcı
 
-### Profil Güncelle
-`PUT /api/Auth/profile`
+Örnek istek:
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
-
-Request:
 ```json
 {
   "fullName": "Ömer Yaralı Güncel",
@@ -89,12 +76,12 @@ Request:
 }
 ```
 
-### Şifre Değiştir
-`PUT /api/Auth/change-password`
+### `PUT /api/Auth/change-password`
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+Yetki: giriş yapmış kullanıcı
 
-Request:
+Örnek istek:
+
 ```json
 {
   "currentPassword": "123456",
@@ -102,18 +89,16 @@ Request:
 }
 ```
 
----
-
 ## Organizer
 
-### Organizatör Başvurusu Yap
-`POST /api/Organizer/apply`
+### `POST /api/Organizer/apply`
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+Yetki: giriş yapmış kullanıcı
 
-Başvuru ilk olarak `Pending` durumunda oluşturulur.
+Organizer başvurusu oluşturur. Kayıt ilk olarak `Pending` olur.
 
-Request:
+Örnek istek:
+
 ```json
 {
   "organizerName": "Ömer Organizasyon",
@@ -126,272 +111,268 @@ Request:
 }
 ```
 
-### Kendi Organizatör Profilim
-`GET /api/Organizer/my-profile`
+### `GET /api/Organizer/my-profile`
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+Yetki: giriş yapmış kullanıcı
 
-### Organizatör Profil Güncelle
-`PUT /api/Organizer/profile`
+Kullanıcının organizer profilini döndürür.
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+### `PUT /api/Organizer/profile`
 
-Onaylı organizatör profilini güncellerse profil tekrar `Pending` olur ve kullanıcı rolü `Participant` yapılır.
+Yetki: giriş yapmış kullanıcı
 
----
+Approved organizer profil güncellenirse profil tekrar `Pending` olur ve kullanıcı rolü tekrar `Participant` yapılır.
 
 ## Category
 
-### Kategorileri Listele
-`GET /api/Category`
+### `GET /api/Category`
 
-Yetki: Public  
-Sadece aktif kategorileri listeler.
+Yetki: public
 
-### Kategori Oluştur
-`POST /api/Category`
+Yalnızca aktif kategorileri döndürür.
 
-Yetki: `Authorization: Bearer ADMIN_TOKEN`
+### `POST /api/Category`
 
-Request:
-```json
-{
-  "name": "Turnuva",
-  "description": "Turnuva ve yarışma etkinlikleri"
-}
-```
+Yetki: `Admin`
 
-### Kategori Aktif Hale Getir
-`PUT /api/Category/{id}/activate`
+Yeni kategori oluşturur.
 
-Yetki: `Authorization: Bearer ADMIN_TOKEN`
+### `DELETE /api/Category/{id}`
 
-### Kategori Pasif Hale Getir
-`PUT /api/Category/{id}/deactivate`
+Yetki: `Admin`
 
-Yetki: `Authorization: Bearer ADMIN_TOKEN`  
-Kategori silinmez, `IsActive = false` yapılır.
+Hard delete yapmaz. Kategoriyi pasif hale çeker.
 
----
+### `PUT /api/Category/{id}/activate`
+
+Yetki: `Admin`
+
+Pasif kategoriyi tekrar aktif yapar.
+
+### `PUT /api/Category/{id}/deactivate`
+
+Yetki: `Admin`
+
+Aktif kategoriyi pasif yapar.
+
+Not:
+
+- Şu an admin için tüm kategorileri ayrı döndüren özel bir liste endpointi yok.
 
 ## Event
 
-### Onaylı Etkinlikleri Listele
-`GET /api/Event/approved`
+### `POST /api/Event`
 
-Yetki: Public
+Yetki: `Organizer`
 
-Pagination:
-```http
-GET /api/Event/approved?page=1&pageSize=10
+Yeni etkinlik oluşturur. Oluşan kayıt ilk olarak `Pending` durumundadır.
+
+Örnek gövde:
+
+```json
+{
+  "eventCategoryId": 1,
+  "title": "Nazilli Tavla Turnuvası",
+  "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
+  "startDate": "2026-06-10T17:00:00Z",
+  "endDate": "2026-06-10T20:00:00Z",
+  "city": "Aydın",
+  "district": "Nazilli",
+  "locationName": "X Cafe",
+  "address": "Nazilli merkez",
+  "latitude": null,
+  "longitude": null,
+  "capacity": 32,
+  "isPaid": false,
+  "price": null,
+  "coverImageUrl": "",
+  "rules": "Eleme usulü oynanacaktır."
+}
 ```
 
-Filtreler:
-```http
-GET /api/Event/approved?city=Aydın
-GET /api/Event/approved?district=Nazilli
-GET /api/Event/approved?categoryId=1
-GET /api/Event/approved?dateFilter=today
-GET /api/Event/approved?dateFilter=tomorrow
-GET /api/Event/approved?dateFilter=thisWeek
-GET /api/Event/approved?dateFilter=upcoming
-GET /api/Event/approved?isPaid=false
-GET /api/Event/approved?search=tavla
-GET /api/Event/approved?sortBy=date
-GET /api/Event/approved?sortBy=newest
-GET /api/Event/approved?sortBy=popular
-GET /api/Event/approved?onlyAvailable=true
-```
+### `GET /api/Event/approved`
 
-Tüm filtreler:
+Yetki: public
+
+Onaylı etkinlikleri listeler.
+
+Kullanılabilen query parametreleri:
+
+- `city`
+- `district`
+- `categoryId`
+- `dateFilter`: `today`, `tomorrow`, `thisWeek`, `upcoming`
+- `isPaid`
+- `search`
+- `sortBy`: `newest`, `popular`
+- `onlyAvailable`
+- `page`
+- `pageSize`
+
+Örnek:
+
 ```http
 GET /api/Event/approved?city=Aydın&district=Nazilli&categoryId=1&dateFilter=upcoming&isPaid=false&search=tavla&sortBy=popular&onlyAvailable=true&page=1&pageSize=10
 ```
 
-Response:
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "organizerProfileId": 1,
-      "organizerName": "Ömer Organizasyon",
-      "eventCategoryId": 1,
-      "categoryName": "Turnuva",
-      "title": "Nazilli Tavla Turnuvası",
-      "description": "Keyifli bir tavla turnuvası düzenliyoruz.",
-      "startDate": "2026-06-01T20:00:00Z",
-      "endDate": "2026-06-01T23:00:00Z",
-      "city": "Aydın",
-      "district": "Nazilli",
-      "locationName": "X Cafe",
-      "address": "Nazilli merkez",
-      "latitude": null,
-      "longitude": null,
-      "capacity": 32,
-      "participantCount": 1,
-      "isPaid": false,
-      "price": null,
-      "coverImageUrl": "",
-      "rules": "Eleme usulü oynanacaktır.",
-      "status": "Approved",
-      "createdAt": "2026-05-31T18:00:00Z",
-      "approvedAt": "2026-05-31T18:10:00Z"
-    }
-  ],
-  "page": 1,
-  "pageSize": 10,
-  "totalCount": 1,
-  "totalPages": 1,
-  "hasPreviousPage": false,
-  "hasNextPage": false
-}
-```
+### `GET /api/Event/{id}`
 
-### Etkinlik Detayı
-`GET /api/Event/{id}`
+Yetki: public
 
-Yetki: Public
+Onaylı tek bir etkinliğin detayını döndürür.
 
-### Etkinlik Oluştur
-`POST /api/Event`
+### `GET /api/Event/my-events`
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
+Yetki: `Organizer`
 
-Etkinlik ilk olarak `Pending` olur.
+Organizerin kendi etkinliklerini sayfalı döndürür.
 
-### Etkinlik Güncelle
-`PUT /api/Event/{id}`
+### `PUT /api/Event/{id}`
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
-Güncellenen etkinlik tekrar `Pending` olur.
+Yetki: `Organizer`
 
-### Kendi Etkinliklerim
-`GET /api/Event/my-events?page=1&pageSize=10`
+Organizer kendi etkinliğini günceller. Güncelleme sonrası etkinlik tekrar `Pending` olur.
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
+### `POST /api/Event/{id}/cancel`
 
-### Etkinliği İptal Et
-`POST /api/Event/{id}/cancel`
+Yetki: `Organizer`
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
-Durum: `Cancelled`
+Event durumunu `Cancelled` yapar.
 
-### Etkinliği Tamamlandı Yap
-`POST /api/Event/{id}/complete`
+### `POST /api/Event/{id}/complete`
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
-Durum: `Completed`
+Yetki: `Organizer`
 
-### Etkinliğe Katıl
-`POST /api/Event/{id}/join`
+Event durumunu `Completed` yapar.
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+### `POST /api/Event/{id}/join`
 
-### Etkinlikten Ayrıl
-`POST /api/Event/{id}/leave`
+Yetki: giriş yapmış kullanıcı
 
-Yetki: `Authorization: Bearer JWT_TOKEN`  
-Katılım durumu `Cancelled` yapılır.
+Kullanıcıyı etkinliğe katılımcı olarak ekler.
 
-### Katıldığım Etkinlikler
-`GET /api/Event/my-joined-events?page=1&pageSize=10`
+### `POST /api/Event/{id}/leave`
 
-Yetki: `Authorization: Bearer JWT_TOKEN`
+Yetki: giriş yapmış kullanıcı
 
-### Etkinlik Katılımcıları
-`GET /api/Event/{id}/participants?page=1&pageSize=20`
+Katılım kaydını silmez, `Cancelled` yapar.
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`
+### `GET /api/Event/my-joined-events`
 
-### Katılımcıyı Geldi Olarak İşaretle
-`PUT /api/Event/{eventId}/participants/{userId}/attended`
+Yetki: giriş yapmış kullanıcı
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
-Durum: `Attended`
+Kullanıcının katıldığı etkinlikleri listeler.
 
-### Katılımcıyı Gelmedi Olarak İşaretle
-`PUT /api/Event/{eventId}/participants/{userId}/no-show`
+### `GET /api/Event/{id}/participants`
 
-Yetki: `Authorization: Bearer ORGANIZER_TOKEN`  
-Durum: `NoShow`
+Yetki: `Organizer`
 
----
+Kendi etkinliğine ait katılımcıları sayfalı döndürür.
+
+### `PUT /api/Event/{eventId}/participants/{userId}/attended`
+
+Yetki: `Organizer`
+
+Katılımcıyı `Attended` yapar.
+
+### `PUT /api/Event/{eventId}/participants/{userId}/no-show`
+
+Yetki: `Organizer`
+
+Katılımcıyı `NoShow` yapar.
 
 ## Admin
 
-Tüm Admin endpointleri için `Authorization: Bearer ADMIN_TOKEN` gereklidir.
+Bu bölümdeki tüm endpointler `Admin` yetkisi ister.
 
-### Dashboard İstatistikleri
-`GET /api/Admin/dashboard-stats`
+### `GET /api/Admin/dashboard-stats`
 
-### Kullanıcıları Listele
-```http
-GET /api/Admin/users?page=1&pageSize=10
-GET /api/Admin/users?role=Participant&page=1&pageSize=10
-GET /api/Admin/users?role=Organizer&page=1&pageSize=10
-GET /api/Admin/users?role=Admin&page=1&pageSize=10
+Dashboard kartları için özet istatistik döndürür.
+
+### `GET /api/Admin/users`
+
+Query parametreleri:
+
+- `role`
+- `page`
+- `pageSize`
+
+### `PUT /api/Admin/users/{id}/activate`
+
+Kullanıcıyı aktif yapar.
+
+### `PUT /api/Admin/users/{id}/deactivate`
+
+Kullanıcıyı pasif yapar.
+
+### `GET /api/Admin/organizers`
+
+Query parametreleri:
+
+- `status`
+- `page`
+- `pageSize`
+
+### `GET /api/Admin/organizers/pending`
+
+Bekleyen organizer başvurularını listeler.
+
+### `PUT /api/Admin/organizers/{id}/approve`
+
+Organizer başvurusunu onaylar ve bağlı kullanıcıyı `Organizer` rolüne geçirir.
+
+### `PUT /api/Admin/organizers/{id}/reject`
+
+Organizer başvurusunu reddeder.
+
+Örnek istek:
+
+```json
+{
+  "rejectionReason": "Belgeler eksik."
+}
 ```
 
-### Kullanıcı Aktif/Pasif Yap
-```http
-PUT /api/Admin/users/{id}/activate
-PUT /api/Admin/users/{id}/deactivate
-```
+### `PUT /api/Admin/organizers/{id}/suspend`
 
-### Organizatörleri Listele
-```http
-GET /api/Admin/organizers?page=1&pageSize=10
-GET /api/Admin/organizers?status=Pending&page=1&pageSize=10
-GET /api/Admin/organizers?status=Approved&page=1&pageSize=10
-GET /api/Admin/organizers?status=Rejected&page=1&pageSize=10
-GET /api/Admin/organizers?status=Suspended&page=1&pageSize=10
-```
+Organizeri askıya alır ve gerekiyorsa kullanıcı rolünü `Participant` yapar.
 
-### Bekleyen Organizatör Başvuruları
-`GET /api/Admin/organizers/pending`
+### `PUT /api/Admin/organizers/{id}/reactivate`
 
-### Organizatör İşlemleri
-```http
-PUT /api/Admin/organizers/{id}/approve
-PUT /api/Admin/organizers/{id}/reject
-PUT /api/Admin/organizers/{id}/suspend
-PUT /api/Admin/organizers/{id}/reactivate
-```
+Organizeri tekrar aktif hale getirir ve kullanıcı rolünü `Organizer` yapar.
 
-### Etkinlikleri Listele
-```http
-GET /api/Admin/events?page=1&pageSize=10
-GET /api/Admin/events?status=Pending&page=1&pageSize=10
-GET /api/Admin/events?status=Approved&page=1&pageSize=10
-GET /api/Admin/events?status=Rejected&page=1&pageSize=10
-GET /api/Admin/events?status=Cancelled&page=1&pageSize=10
-GET /api/Admin/events?status=Completed&page=1&pageSize=10
-```
+### `GET /api/Admin/events`
 
-### Bekleyen Etkinlikler
-`GET /api/Admin/events/pending`
+Query parametreleri:
 
-### Etkinlik Onayla / Reddet
-```http
-PUT /api/Admin/events/{id}/approve
-PUT /api/Admin/events/{id}/reject
-```
+- `status`
+- `page`
+- `pageSize`
 
----
+### `GET /api/Admin/events/pending`
 
-## Admin Panel Sayfaları
+Bekleyen etkinlikleri listeler.
 
-| Sayfa | Açıklama |
-|---|---|
-| `/login` | Admin giriş ekranı |
-| `/dashboard` | Dashboard istatistik ekranı |
-| `/organizers` | Organizatör yönetimi |
-| `/events` | Etkinlik yönetimi |
-| `/users` | Kullanıcı yönetimi |
-| `/categories` | Kategori yönetimi |
+### `PUT /api/Admin/events/{id}/approve`
 
-URL filtreleri:
+Eventi onaylar.
+
+### `PUT /api/Admin/events/{id}/reject`
+
+Eventi reddeder.
+
+## Admin Panel Rotaları
+
+### Mevcut sayfalar
+
+- `/login`
+- `/dashboard`
+- `/organizers`
+- `/events`
+- `/users`
+- `/categories`
+
+### Sık kullanılan filtreler
 
 ```http
 /events?status=Pending
@@ -402,61 +383,10 @@ URL filtreleri:
 
 /organizers?status=Pending
 /organizers?status=Approved
+/organizers?status=Rejected
 /organizers?status=Suspended
 
 /users?role=Participant
 /users?role=Organizer
 /users?role=Admin
-```
-
----
-
-## Durum Değerleri
-
-### User Role
-```text
-Participant
-Organizer
-Admin
-```
-
-### OrganizerProfile Status
-```text
-Pending
-Approved
-Rejected
-Suspended
-```
-
-### Event Status
-```text
-Pending
-Approved
-Rejected
-Cancelled
-Completed
-```
-
-### EventParticipant Status
-```text
-Joined
-Cancelled
-Attended
-NoShow
-```
-
----
-
-## Pagination Response Formatı
-
-```json
-{
-  "items": [],
-  "page": 1,
-  "pageSize": 10,
-  "totalCount": 0,
-  "totalPages": 0,
-  "hasPreviousPage": false,
-  "hasNextPage": false
-}
 ```

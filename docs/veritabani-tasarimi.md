@@ -1,107 +1,79 @@
-<!--
-Etkinlik Projesi dokümantasyonu
-Güncel kapsam: Backend MVP + Admin Panel MVP
--->
 # Veritabanı Tasarımı
 
-Bu dosya, Etkinlik Projesi backend tarafında kullanılan veritabanı tablolarını, alanlarını ve tablolar arası ilişkileri açıklar.
+Son güncelleme: `2026-06-05`
 
----
+Bu belge, backend tarafındaki temel veri modelini kodla uyumlu olacak şekilde özetler.
 
-## Kullanılan Teknolojiler
+## Teknoloji
 
-```text
-Veritabanı: PostgreSQL
-ORM: Entity Framework Core
-Backend: ASP.NET Core Web API
-Migration Yönetimi: EF Core Migrations
-```
+- `PostgreSQL`
+- `Entity Framework Core`
+- `EF Core Migrations`
 
----
+## Tablolar
 
-## Temel Tablolar
+- `Users`
+- `OrganizerProfiles`
+- `EventCategories`
+- `Events`
+- `EventParticipants`
+- `__EFMigrationsHistory`
 
-```text
-Users
-OrganizerProfiles
-EventCategories
-Events
-EventParticipants
-__EFMigrationsHistory
-```
-
----
-
-## Genel İlişki Yapısı
+## İlişki Özeti
 
 ```text
-Users
-  └── OrganizerProfiles
-        └── Events
-              ├── EventCategories
-              └── EventParticipants
-                    └── Users
+Users (1) -------- (0..1) OrganizerProfiles
+OrganizerProfiles (1) ---- (N) Events
+EventCategories (1) ------ (N) Events
+Users (1) ---------------- (N) EventParticipants
+Events (1) --------------- (N) EventParticipants
 ```
 
----
+Kod tarafında ilişkiler `DeleteBehavior.Restrict` ile kurulmuştur.
 
 ## Users
 
 Sistemdeki tüm kullanıcıları tutar.
 
-Roller:
-
-```text
-Participant
-Organizer
-Admin
-```
-
-Alanlar:
-
 | Alan | Tip | Açıklama |
 |---|---|---|
-| Id | int | Kullanıcı kimliği |
-| FullName | string | Ad soyad |
-| Email | string | E-posta |
-| PhoneNumber | string | Telefon |
-| PasswordHash | string | BCrypt hash |
-| ProfileImageUrl | string | Profil görseli URL |
-| Role | string | Kullanıcı rolü |
-| IsActive | bool | Aktif mi |
-| CreatedAt | DateTime | Oluşturulma tarihi |
+| `Id` | `int` | Kullanıcı kimliği |
+| `FullName` | `string` | Ad soyad |
+| `Email` | `string` | E-posta |
+| `PhoneNumber` | `string` | Telefon |
+| `PasswordHash` | `string` | BCrypt hash değeri |
+| `ProfileImageUrl` | `string` | Profil görseli adresi |
+| `Role` | `string` | `Participant`, `Organizer`, `Admin` |
+| `IsActive` | `bool` | Hesap aktif mi |
+| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
 
-Notlar:
+Kurallar:
 
-- Şifreler düz metin tutulmaz.
-- Kullanıcı varsayılan olarak `Participant` oluşturulur.
-- `IsActive = false` olan kullanıcı login olamaz.
-
----
+- Yeni kullanıcı varsayılan olarak `Participant` rolüyle açılır.
+- Şifre düz metin tutulmaz.
+- `IsActive = false` olan kullanıcı giriş yapamaz.
 
 ## OrganizerProfiles
 
-Organizatör başvurularını ve profil bilgilerini tutar.
-
-Alanlar:
+Organizer başvurusunu ve organizer profilini tutar.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| Id | int | Organizatör profil kimliği |
-| UserId | int | Kullanıcı |
-| OrganizerName | string | Organizatör adı |
-| OrganizerType | string | Organizatör tipi |
-| Description | string | Açıklama |
-| PhoneNumber | string | Telefon |
-| InstagramUrl | string | Instagram linki |
-| City | string | Şehir |
-| District | string | İlçe |
-| Status | string | Başvuru durumu |
-| RejectionReason | string | Red sebebi |
-| CreatedAt | DateTime | Oluşturulma tarihi |
-| ApprovedAt | DateTime? | Onay tarihi |
+| `Id` | `int` | Profil kimliği |
+| `UserId` | `int` | Bağlı kullanıcı |
+| `OrganizerName` | `string` | Görünen organizer adı |
+| `OrganizerType` | `string` | Tür bilgisi |
+| `Description` | `string` | Açıklama |
+| `PhoneNumber` | `string` | Telefon |
+| `InstagramUrl` | `string` | Sosyal medya bağlantısı |
+| `City` | `string` | Şehir |
+| `District` | `string` | İlçe |
+| `Status` | `string` | Başvuru durumu |
+| `RejectionReason` | `string` | Red sebebi |
+| `CreatedAt` | `DateTime` | Başvuru tarihi |
+| `ApprovedAt` | `DateTime?` | Onay tarihi |
 
-OrganizerType:
+`OrganizerType` örnekleri:
 
 ```text
 Individual
@@ -110,7 +82,7 @@ Club
 Institution
 ```
 
-Status:
+`Status` değerleri:
 
 ```text
 Pending
@@ -119,75 +91,58 @@ Rejected
 Suspended
 ```
 
-İlişki:
+Davranış:
 
-```text
-OrganizerProfiles.UserId → Users.Id
-```
-
-Onaylı profil güncellenirse:
-
-```text
-OrganizerProfile.Status = Pending
-OrganizerProfile.ApprovedAt = null
-User.Role = Participant
-```
-
----
+- Bir kullanıcı için tek organizer profili beklenir.
+- Onaylı profil güncellenirse tekrar `Pending` olur.
+- Onaylı profil güncellendiğinde kullanıcı rolü tekrar `Participant` yapılır.
 
 ## EventCategories
 
-Etkinlik kategorilerini tutar.
-
-Alanlar:
+Etkinlik sınıflandırması için kullanılır.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| Id | int | Kategori kimliği |
-| Name | string | Kategori adı |
-| Description | string | Açıklama |
-| IsActive | bool | Aktif mi |
-| CreatedAt | DateTime | Oluşturulma tarihi |
+| `Id` | `int` | Kategori kimliği |
+| `Name` | `string` | Kategori adı |
+| `Description` | `string` | Açıklama |
+| `IsActive` | `bool` | Aktiflik durumu |
+| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
 
-Notlar:
+Kurallar:
 
-- Sadece `IsActive = true` olan kategoriler kullanıcı tarafında listelenir.
-- Kategori silinmez, pasif hale getirilir.
-- Bu yaklaşım bağlı etkinliklerin ilişkisini bozmaz.
-
----
+- Public listelemede yalnızca aktif kategoriler döner.
+- Silme yerine `IsActive = false` yaklaşımı tercih edilir.
 
 ## Events
 
-Organizatörler tarafından oluşturulan etkinlikleri tutar.
-
-Alanlar:
+Organizer tarafından oluşturulan etkinlikleri tutar.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| Id | int | Etkinlik kimliği |
-| OrganizerProfileId | int | Organizatör profili |
-| EventCategoryId | int | Kategori |
-| Title | string | Başlık |
-| Description | string | Açıklama |
-| StartDate | DateTime | Başlangıç |
-| EndDate | DateTime? | Bitiş |
-| City | string | Şehir |
-| District | string | İlçe |
-| LocationName | string | Konum adı |
-| Address | string | Adres |
-| Latitude | double? | Enlem |
-| Longitude | double? | Boylam |
-| Capacity | int | Kontenjan |
-| IsPaid | bool | Ücretli mi |
-| Price | decimal? | Fiyat |
-| CoverImageUrl | string | Kapak görseli |
-| Rules | string | Kurallar |
-| Status | string | Etkinlik durumu |
-| CreatedAt | DateTime | Oluşturulma |
-| ApprovedAt | DateTime? | Onay tarihi |
+| `Id` | `int` | Etkinlik kimliği |
+| `OrganizerProfileId` | `int` | Etkinlik sahibi organizer |
+| `EventCategoryId` | `int` | Kategori |
+| `Title` | `string` | Başlık |
+| `Description` | `string` | Açıklama |
+| `StartDate` | `DateTime` | Başlangıç |
+| `EndDate` | `DateTime?` | Bitiş |
+| `City` | `string` | Şehir |
+| `District` | `string` | İlçe |
+| `LocationName` | `string` | Mekan adı |
+| `Address` | `string` | Adres |
+| `Latitude` | `double?` | Enlem |
+| `Longitude` | `double?` | Boylam |
+| `Capacity` | `int` | Kontenjan |
+| `IsPaid` | `bool` | Ücretli mi |
+| `Price` | `decimal?` | Ücret |
+| `CoverImageUrl` | `string` | Kapak görseli |
+| `Rules` | `string` | Katılım kuralları |
+| `Status` | `string` | Event durumu |
+| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
+| `ApprovedAt` | `DateTime?` | Onay tarihi |
 
-Status:
+`Status` değerleri:
 
 ```text
 Pending
@@ -197,38 +152,26 @@ Cancelled
 Completed
 ```
 
-İlişkiler:
+Kurallar:
 
-```text
-Events.OrganizerProfileId → OrganizerProfiles.Id
-Events.EventCategoryId → EventCategories.Id
-```
-
-Notlar:
-
-- Kullanıcı tarafında sadece `Approved` etkinlikler görünür.
+- Public tarafta yalnızca `Approved` etkinlikler görünür.
 - Güncellenen etkinlik tekrar `Pending` olur.
-- İptal edilen etkinlik `Cancelled` olur.
-- Tamamlanan etkinlik `Completed` olur.
+- `Cancelled` veya `Completed` etkinlik güncellenemez.
 - Katılımcı sayısı aktif `Joined` kayıtları üzerinden hesaplanır.
-
----
 
 ## EventParticipants
 
-Kullanıcıların etkinlik katılımlarını tutar.
-
-Alanlar:
+Kullanıcıların etkinlik katılım kayıtlarını tutar.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| Id | int | Katılım kimliği |
-| EventId | int | Etkinlik |
-| UserId | int | Kullanıcı |
-| Status | string | Katılım durumu |
-| JoinedAt | DateTime | Katılım tarihi |
+| `Id` | `int` | Kayıt kimliği |
+| `EventId` | `int` | Bağlı etkinlik |
+| `UserId` | `int` | Bağlı kullanıcı |
+| `Status` | `string` | Katılım durumu |
+| `JoinedAt` | `DateTime` | Katılım zamanı |
 
-Status:
+`Status` değerleri:
 
 ```text
 Joined
@@ -237,118 +180,51 @@ Attended
 NoShow
 ```
 
-İlişkiler:
+Kurallar:
 
-```text
-EventParticipants.EventId → Events.Id
-EventParticipants.UserId → Users.Id
-```
-
-Notlar:
-
-- Aynı kullanıcı aynı etkinliğe ikinci kez aktif olarak katılamaz.
+- Aynı kullanıcı aynı etkinliğe ikinci kez aktif `Joined` kaydı açamaz.
 - Ayrılma işleminde kayıt silinmez, `Cancelled` yapılır.
-- Yoklama için `Attended` ve `NoShow` kullanılır.
-
----
-
-## __EFMigrationsHistory
-
-Entity Framework Core tarafından otomatik oluşturulur. Migration geçmişini takip eder.
-
----
-
-## İlişki Diyagramı
-
-```text
-Users
-  Id
-  FullName
-  Email
-  Role
-   │
-   │ 1 - 1
-   ▼
-OrganizerProfiles
-  Id
-  UserId
-  OrganizerName
-  Status
-   │
-   │ 1 - N
-   ▼
-Events
-  Id
-  OrganizerProfileId
-  EventCategoryId
-  Title
-  Status
-   ▲
-   │ N - 1
-EventCategories
-  Id
-  Name
-  IsActive
-
-Events
-  Id
-   │
-   │ 1 - N
-   ▼
-EventParticipants
-  Id
-  EventId
-  UserId
-  Status
-   ▲
-   │ N - 1
-Users
-  Id
-  FullName
-  Email
-```
-
----
-
-## Silme Davranışı
-
-İlişkilerde genel olarak `DeleteBehavior.Restrict` tercih edilir.
-
-Amaç:
-
-- Kullanıcı silinirse organizatör başvurusunun otomatik silinmemesi
-- Etkinlik silinirse katılım kayıtlarının kontrolsüz silinmemesi
-- Kategori silinirse bağlı etkinliklerin bozulmaması
-
-İleride `Soft Delete` eklenebilir.
-
----
+- Organizer yoklama için `Attended` ve `NoShow` değerlerini kullanır.
 
 ## Tarih Yönetimi
 
-Tarih alanlarında UTC mantığı tercih edilir.
+Kod tarafında tarih alanları UTC mantığıyla ele alınır.
 
 Örnek alanlar:
 
+- `CreatedAt`
+- `ApprovedAt`
+- `StartDate`
+- `EndDate`
+- `JoinedAt`
+
+Backend tarafında `DateTime.UtcNow` kullanımı tercih edilir.
+
+## DTO Yapısı
+
+Backend içindeki DTO klasörleri:
+
 ```text
-CreatedAt
-ApprovedAt
-StartDate
-EndDate
-JoinedAt
+Dtos/Auth
+Dtos/Organizer
+Dtos/Admin
+Dtos/Category
+Dtos/Event
+Dtos/Common
 ```
 
-Backend tarafında:
+Öne çıkan tipler:
 
-```csharp
-DateTime.UtcNow
-```
+- `AuthResponse`
+- `OrganizerProfileResponse`
+- `CategoryResponse`
+- `EventResponse`
+- `EventParticipantResponse`
+- `PagedResponse<T>`
 
-kullanılması önerilir.
+## Pagination Yapısı
 
----
-
-## Pagination Response Yapısı
+Birden fazla liste endpointinde aşağıdaki ortak yapı kullanılır:
 
 ```json
 {
@@ -362,109 +238,12 @@ kullanılması önerilir.
 }
 ```
 
-Kullanılan endpointler:
-
-```http
-GET /api/Admin/users?page=1&pageSize=10
-GET /api/Admin/events?page=1&pageSize=10
-GET /api/Admin/organizers?page=1&pageSize=10
-GET /api/Event/approved?page=1&pageSize=10
-GET /api/Event/my-events?page=1&pageSize=10
-GET /api/Event/my-joined-events?page=1&pageSize=10
-GET /api/Event/{id}/participants?page=1&pageSize=20
-```
-
----
-
-## DTO Yapıları
-
-```text
-Dtos/Auth
-Dtos/Organizer
-Dtos/Admin
-Dtos/Category
-Dtos/Event
-Dtos/Common
-```
-
-Auth:
-
-```text
-RegisterRequest
-LoginRequest
-AuthResponse
-UpdateProfileRequest
-ChangePasswordRequest
-```
-
-Organizer:
-
-```text
-CreateOrganizerProfileRequest
-UpdateOrganizerProfileRequest
-OrganizerProfileResponse
-```
-
-Admin:
-
-```text
-AdminUserResponse
-AdminDashboardStatsResponse
-RejectOrganizerRequest
-```
-
-Category:
-
-```text
-CreateCategoryRequest
-CategoryResponse
-```
-
-Event:
-
-```text
-CreateEventRequest
-UpdateEventRequest
-EventResponse
-EventParticipantResponse
-```
-
-Common:
-
-```text
-PagedResponse<T>
-```
-
----
-
 ## İleride Eklenebilecek Tablolar
 
-```text
-EventImages
-OrganizerImages
-Notifications
-Reports
-Payments
-FeaturedEvents
-Reviews
-PasswordResetTokens
-```
-
----
-
-## Genel Özet
-
-Veritabanı tasarımı şu iş akışını destekler:
-
-```text
-Kullanıcı kayıt olur.
-Kullanıcı organizatör başvurusu yapar.
-Admin organizatörü onaylar.
-Organizer etkinlik oluşturur.
-Admin etkinliği onaylar.
-Katılımcılar etkinliği görür.
-Katılımcılar etkinliğe katılır.
-Katılımcılar etkinlikten ayrılabilir.
-Organizer katılımcıları yönetebilir.
-Admin kullanıcı, organizatör, etkinlik ve kategorileri yönetebilir.
-```
+- `EventImages`
+- `OrganizerImages`
+- `Notifications`
+- `Reports`
+- `Payments`
+- `Reviews`
+- `PasswordResetTokens`

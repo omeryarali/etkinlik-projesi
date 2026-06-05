@@ -1,14 +1,72 @@
-<!--
-Etkinlik Projesi dokümantasyonu
-Güncel kapsam: Backend MVP + Admin Panel MVP
--->
-# Roller ve Akış
+# Roller ve Akışlar
 
-Bu dosya, Etkinlik Projesi içerisindeki kullanıcı rollerini, her rolün yapabileceklerini ve temel uygulama akışlarını açıklar.
+Son güncelleme: `2026-06-05`
 
----
+Bu belge, sistemdeki rollerin yetkilerini ve ana iş akışlarını özetler.
 
 ## Roller
+
+- `Participant`
+- `Organizer`
+- `Admin`
+
+## Rol Özeti
+
+### Participant
+
+Yapabilir:
+
+- Kayıt olabilir
+- Giriş yapabilir
+- Profilini görüntüleyebilir ve güncelleyebilir
+- Şifresini değiştirebilir
+- Onaylı etkinlikleri görebilir
+- Etkinlik filtreleyebilir
+- Etkinlik detayına girebilir
+- Etkinliğe katılabilir
+- Etkinlikten ayrılabilir
+- Katıldığı etkinlikleri görebilir
+- Organizer başvurusu yapabilir
+
+Yapamaz:
+
+- Organizer onayı olmadan etkinlik oluşturamaz
+- Başkasının etkinlik katılımcı listesini göremez
+- Admin işlemleri yapamaz
+
+### Organizer
+
+Yapabilir:
+
+- Kendi organizer profilini görüntüleyebilir
+- Etkinlik oluşturabilir
+- Kendi etkinliklerini listeleyebilir
+- Kendi etkinliğini güncelleyebilir
+- Kendi etkinliğini iptal edebilir
+- Kendi etkinliğini tamamlandı yapabilir
+- Kendi etkinlik katılımcılarını görebilir
+- Katılımcılara yoklama işleyebilir
+
+Yapamaz:
+
+- Etkinliği admin onayı olmadan yayına alamaz
+- Başka organizerin etkinliğini yönetemez
+- Admin işlemleri yapamaz
+
+### Admin
+
+Yapabilir:
+
+- Dashboard istatistiklerini görebilir
+- Kullanıcıları listeleyebilir
+- Kullanıcıları aktif veya pasif yapabilir
+- Organizer başvurularını yönetebilir
+- Etkinlikleri onaylayabilir veya reddedebilir
+- Kategorileri yönetebilir
+
+## Durum Değerleri
+
+### User Role
 
 ```text
 Participant
@@ -16,269 +74,133 @@ Organizer
 Admin
 ```
 
----
+### OrganizerProfile Status
 
-## Participant
+```text
+Pending
+Approved
+Rejected
+Suspended
+```
 
-Participant, uygulamaya kayıt olan normal katılımcıdır.
+### Event Status
 
-### Yapabilir
+```text
+Pending
+Approved
+Rejected
+Cancelled
+Completed
+```
 
-- Kayıt olabilir.
-- Giriş yapabilir.
-- Kendi bilgilerini görüntüleyebilir.
-- Profil bilgilerini güncelleyebilir.
-- Şifresini değiştirebilir.
-- Onaylı etkinlikleri listeleyebilir.
-- Etkinlikleri filtreleyebilir.
-- Etkinlik detayını görüntüleyebilir.
-- Etkinliğe katılabilir.
-- Etkinlikten ayrılabilir.
-- Katıldığı etkinlikleri listeleyebilir.
-- Organizatör başvurusu yapabilir.
-- Kendi başvuru durumunu görebilir.
+### EventParticipant Status
 
-### Yapamaz
+```text
+Joined
+Cancelled
+Attended
+NoShow
+```
 
-- Admin onayı olmadan etkinlik oluşturamaz.
-- Başkasının etkinliğinin katılımcı listesini göremez.
-- Etkinlik onaylayamaz veya reddedemez.
-- Organizatör başvurularını yönetemez.
-- Kategori oluşturamaz.
-- Admin işlemleri yapamaz.
+## Ana Akışlar
 
-### Akış
+### 1. Kayıt ve Giriş
 
 ```text
 Kullanıcı kayıt olur.
-Giriş yapar.
-Onaylı etkinlikleri listeler.
-Filtreleme veya arama yapar.
-Etkinlik detayına girer.
-Etkinliğe katılır.
-İsterse etkinlikten ayrılır.
-İsterse organizatör başvurusu yapar.
+Sistem kullanıcıyı Participant rolüyle oluşturur.
+Şifre BCrypt ile hashlenir.
+JWT token üretilir.
+Kullanıcı giriş yaptığında rolüne uygun token alır.
 ```
 
----
-
-## Organizer
-
-Organizer, admin tarafından onaylanmış organizatördür.
-
-### Yapabilir
-
-- Kendi organizatör profilini görüntüleyebilir.
-- Etkinlik oluşturabilir.
-- Kendi etkinliklerini listeleyebilir.
-- Kendi etkinliğini güncelleyebilir.
-- Kendi etkinliğini iptal edebilir.
-- Kendi etkinliğini tamamlandı yapabilir.
-- Kendi etkinliğine katılan kullanıcıları görebilir.
-- Katılımcıları geldi/gelmedi olarak işaretleyebilir.
-
-### Yapamaz
-
-- Kendi etkinliğini direkt yayına alamaz.
-- Başkasının etkinliğini yönetemez.
-- Başkasının katılımcı listesini göremez.
-- Admin işlemleri yapamaz.
-
-### Organizer Olma Akışı
+### 2. Organizer Başvuru Akışı
 
 ```text
-Kullanıcı Participant olarak kayıt olur.
-Organizatör başvuru formunu doldurur.
-Başvuru Pending olur.
-Admin panelden başvuruyu inceler.
+Participant organizer başvurusu yapar.
+Başvuru Pending olarak oluşturulur.
+Admin başvuruyu inceler.
 Admin onaylarsa OrganizerProfile.Status = Approved olur.
 User.Role = Organizer olur.
-Kullanıcı tekrar login olduğunda Organizer rolüyle token alır.
+Kullanıcı tekrar giriş yaptığında organizer yetkileriyle işlem yapabilir.
 ```
 
-### Organizer Profil Güncelleme Akışı
+### 3. Organizer Profil Güncelleme Akışı
 
 ```text
 Organizer profilini günceller.
-Profil Approved ise tekrar Pending yapılır.
+Profil daha önce Approved ise tekrar Pending olur.
+ApprovedAt temizlenir.
 User.Role tekrar Participant yapılır.
-Admin tekrar onaylamadan organizer yetkisi kullanılamaz.
+Profil yeniden admin onayına düşer.
 ```
 
-### Organizer Etkinlik Akışı
+### 4. Etkinlik Yayın Akışı
 
 ```text
 Organizer etkinlik oluşturur.
-Etkinlik Pending olur.
-Admin etkinliği onaylar.
-Etkinlik Approved olur.
-Organizer isterse etkinliği günceller.
+Etkinlik Pending olarak kaydedilir.
+Admin etkinliği inceler.
+Admin onaylarsa etkinlik Approved olur.
+Public listelerde yalnızca Approved etkinlikler görünür.
+```
+
+### 5. Etkinlik Güncelleme Akışı
+
+```text
+Organizer kendi etkinliğini günceller.
 Güncellenen etkinlik tekrar Pending olur.
-Organizer etkinliği iptal edebilir.
-Organizer etkinliği Completed yapabilir.
+ApprovedAt alanı temizlenir.
+Etkinlik yeniden admin onayına düşer.
 ```
 
-### Katılımcı Akışı
-
-```text
-Organizer katılımcı listesini açar.
-Sistem etkinliğin organizer'a ait olup olmadığını kontrol eder.
-Organizer katılımcıları görebilir.
-Etkinlik sonrası Attended veya NoShow işaretleyebilir.
-```
-
----
-
-## Admin
-
-Admin sistem yöneticisidir.
-
-### Yapabilir
-
-- Dashboard istatistiklerini görebilir.
-- Kullanıcıları listeleyebilir.
-- Kullanıcıları aktif/pasif yapabilir.
-- Organizatörleri listeleyebilir.
-- Organizatörleri onaylayabilir/reddedebilir.
-- Organizatörleri askıya alabilir/aktif edebilir.
-- Etkinlikleri listeleyebilir.
-- Etkinlikleri onaylayabilir/reddedebilir.
-- Kategorileri listeleyebilir.
-- Kategori oluşturabilir.
-- Kategorileri aktif/pasif yapabilir.
-
-### Admin Organizer Akışı
-
-```text
-Admin login olur.
-Organizatörler sayfasına girer.
-Pending başvuruları listeler.
-Detay modalından bilgileri inceler.
-Onaylar veya reddeder.
-Onayda User.Role = Organizer olur.
-Askıya alma durumunda User.Role = Participant olur.
-```
-
-### Admin Event Akışı
-
-```text
-Admin etkinlikler sayfasına girer.
-Pending etkinlikleri listeler.
-Detay modalından bilgileri inceler.
-Uygunsa Approved yapar.
-Uygun değilse Rejected yapar.
-```
-
-### Admin Kullanıcı Akışı
-
-```text
-Admin kullanıcıları listeler.
-Role göre filtreleyebilir.
-Kullanıcıyı pasif yapabilir.
-Pasif kullanıcı login olamaz.
-Kullanıcı tekrar aktif yapılabilir.
-```
-
-### Admin Kategori Akışı
-
-```text
-Admin kategorileri listeler.
-Yeni kategori ekler.
-Kategori aktif/pasif yapar.
-Kategori silinmez.
-```
-
----
-
-## Temel Sistem Akışları
-
-### Kayıt ve Giriş
-
-```text
-Kullanıcı kayıt formunu doldurur.
-Sistem e-posta kontrolü yapar.
-Şifre BCrypt ile hashlenir.
-Kullanıcı Participant rolüyle oluşturulur.
-JWT token üretilir.
-```
-
-### Etkinliğe Katılım
+### 6. Katılım Akışı
 
 ```text
 Kullanıcı etkinlik detayına girer.
-Katıl butonuna basar.
-Sistem etkinliğin Approved olup olmadığını kontrol eder.
-Daha önce katılım var mı kontrol eder.
-Kontenjan kontrolü yapar.
-EventParticipant kaydı Joined olur.
+Sistem etkinliğin Approved olduğunu kontrol eder.
+Sistem kullanıcının daha önce aktif katılımı olup olmadığını kontrol eder.
+Sistem kontenjanı kontrol eder.
+Katılım kaydı Joined olarak oluşturulur.
 ```
 
-### Etkinlikten Ayrılma
+### 7. Etkinlikten Ayrılma Akışı
 
 ```text
 Kullanıcı etkinlikten ayrılır.
 Kayıt silinmez.
-EventParticipant.Status = Cancelled yapılır.
+Katılım kaydı Cancelled durumuna çekilir.
 ```
 
-### Yoklama
+### 8. Yoklama Akışı
 
 ```text
-Organizer etkinlik sonrası katılımcı listesini açar.
+Organizer kendi etkinlik katılımcı listesini açar.
 Katılımcıyı Attended veya NoShow olarak işaretler.
+Cancelled durumundaki katılımcıya yoklama işlenmez.
 ```
 
----
+## Yetki Matrisi
 
-## Yetki Özeti
-
-| İşlem | Public | Authorize | Participant | Organizer | Admin |
-|---|---:|---:|---:|---:|---:|
-| Kayıt olma | Evet | Hayır | Evet | Evet | Evet |
-| Giriş yapma | Evet | Hayır | Evet | Evet | Evet |
-| Onaylı etkinlikleri görme | Evet | Hayır | Evet | Evet | Evet |
-| Etkinliğe katılma | Hayır | Evet | Evet | Evet | Evet |
-| Organizatör başvurusu | Hayır | Evet | Evet | Hayır | Hayır |
-| Etkinlik oluşturma | Hayır | Evet | Hayır | Evet | Hayır |
-| Organizatör onaylama | Hayır | Evet | Hayır | Hayır | Evet |
-| Etkinlik onaylama | Hayır | Evet | Hayır | Hayır | Evet |
-| Kategori oluşturma | Hayır | Evet | Hayır | Hayır | Evet |
-
----
+| İşlem | Public | Participant | Organizer | Admin |
+|---|---:|---:|---:|---:|
+| Kayıt olma | Evet | Evet | Evet | Evet |
+| Giriş yapma | Evet | Evet | Evet | Evet |
+| Onaylı etkinlikleri görüntüleme | Evet | Evet | Evet | Evet |
+| Etkinliğe katılma | Hayır | Evet | Evet | Evet |
+| Organizer başvurusu yapma | Hayır | Evet | Hayır | Hayır |
+| Etkinlik oluşturma | Hayır | Hayır | Evet | Hayır |
+| Katılımcı listesini görme | Hayır | Hayır | Evet | Hayır |
+| Organizer onaylama | Hayır | Hayır | Hayır | Evet |
+| Event onaylama | Hayır | Hayır | Hayır | Evet |
+| Kategori oluşturma | Hayır | Hayır | Hayır | Evet |
 
 ## Admin Panel Akışı
 
 ```text
-Admin /login sayfasından giriş yapar.
-Admin rolü kontrol edilir.
-Token localStorage'a kaydedilir.
-Admin /dashboard sayfasına yönlendirilir.
-AdminLayout auth guard ile korunan sayfalara erişim sağlar.
-Token bozuksa veya yoksa kullanıcı /login sayfasına atılır.
-```
-
-Admin panel sayfaları:
-
-```text
-/login
-/dashboard
-/organizers
-/events
-/users
-/categories
-```
-
----
-
-## Genel Özet
-
-```text
-Participant etkinlikleri keşfeder ve katılır.
-Participant isterse organizatör başvurusu yapar.
-Admin başvuruyu onaylarsa kullanıcı Organizer olur.
-Organizer etkinlik oluşturur.
-Admin etkinliği onaylarsa etkinlik yayına çıkar.
-Participant kullanıcılar etkinliği görür ve katılır.
-Organizer katılımcılarını takip eder.
-Admin sistem güvenliğini ve içerik kontrolünü sağlar.
+Admin login olur.
+Token localStorage içinde saklanır.
+Admin korumalı sayfalara yönlendirilir.
+Token geçersizse kullanıcı login sayfasına döner.
+Admin dashboard, users, organizers, events ve categories ekranlarından işlem yapar.
 ```
