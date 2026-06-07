@@ -1,13 +1,15 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import {
   AppCard,
   AppScrollCanvas,
   DangerButton,
   DetailRow,
+  ErrorStateCard,
   InkButton,
+  LoadingStateCard,
   MetricTile,
   PrimaryButton,
   SecondaryButton,
@@ -101,8 +103,10 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <AppScrollCanvas contentContainerStyle={styles.centered}>
-        <ActivityIndicator color={AppTheme.colors.accentDeep} />
-        <Text style={styles.infoText}>Profil hazırlanıyor...</Text>
+        <LoadingStateCard
+          title="Profilin hazırlanıyor"
+          description="Hesap bilgilerin ve organizer durumun senin için yükleniyor."
+        />
       </AppScrollCanvas>
     );
   }
@@ -110,7 +114,14 @@ export default function ProfileScreen() {
   if (error || !user) {
     return (
       <AppScrollCanvas contentContainerStyle={styles.centered}>
-        <Text style={styles.errorText}>{error || "Profil bulunamadı."}</Text>
+        <ErrorStateCard
+          title="Profil şu anda açılamadı"
+          description={error || "Profil bilgilerine şu anda ulaşılamıyor."}
+          actionLabel="Tekrar Dene"
+          onAction={() => {
+            void loadProfile();
+          }}
+        />
         <SecondaryButton label="Geri Dön" onPress={() => router.back()} />
       </AppScrollCanvas>
     );

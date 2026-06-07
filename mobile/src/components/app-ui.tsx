@@ -61,6 +61,14 @@ type AppInputProps = TextInputProps & {
   errorText?: string;
 };
 
+type StateCardProps = {
+  eyebrow?: string;
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+};
+
 export function AppCanvas({ children, style }: AppCanvasProps) {
   const insets = useSafeAreaInsets();
 
@@ -374,16 +382,68 @@ export function AppInput({
 }
 
 export function EmptyStateCard({
+  eyebrow = "Şimdilik boş",
   title,
   description,
-}: {
-  title: string;
-  description: string;
-}) {
+  actionLabel,
+  onAction,
+}: StateCardProps) {
   return (
     <AppCard tone="muted" style={styles.emptyCard}>
+      <Text style={styles.emptyEyebrow}>{eyebrow}</Text>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyDescription}>{description}</Text>
+      {actionLabel && onAction ? (
+        <SecondaryButton
+          label={actionLabel}
+          onPress={onAction}
+          style={styles.emptyAction}
+        />
+      ) : null}
+    </AppCard>
+  );
+}
+
+export function LoadingStateCard({
+  eyebrow = "BiKatıl hazırlanıyor",
+  title,
+  description,
+}: Omit<StateCardProps, "actionLabel" | "onAction">) {
+  return (
+    <AppCard tone="accent" style={styles.stateCard}>
+      <Text style={styles.stateEyebrow}>{eyebrow}</Text>
+      <Text style={styles.stateTitle}>{title}</Text>
+      <Text style={styles.stateDescription}>{description}</Text>
+
+      <View style={styles.stateLoadingRow}>
+        <View style={styles.stateLoadingOrb}>
+          <ActivityIndicator color={AppTheme.colors.accentDeep} />
+        </View>
+        <Text style={styles.stateLoadingText}>Kısa bir an, akış hazırlanıyor.</Text>
+      </View>
+    </AppCard>
+  );
+}
+
+export function ErrorStateCard({
+  eyebrow = "Bir şey ters gitti",
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: StateCardProps) {
+  return (
+    <AppCard tone="muted" style={styles.stateCard}>
+      <Text style={styles.errorEyebrow}>{eyebrow}</Text>
+      <Text style={styles.stateTitle}>{title}</Text>
+      <Text style={styles.stateDescription}>{description}</Text>
+      {actionLabel && onAction ? (
+        <SecondaryButton
+          label={actionLabel}
+          onPress={onAction}
+          style={styles.stateAction}
+        />
+      ) : null}
     </AppCard>
   );
 }
@@ -761,7 +821,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 24,
   },
+  emptyEyebrow: {
+    color: AppTheme.colors.accentDeep,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
+  },
   emptyTitle: {
+    marginTop: 10,
     color: AppTheme.colors.text,
     fontSize: 18,
     fontWeight: "700",
@@ -775,6 +844,76 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlign: "center",
     fontFamily: Fonts.sans,
+  },
+  emptyAction: {
+    marginTop: 16,
+    alignSelf: "stretch",
+  },
+  stateCard: {
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  stateEyebrow: {
+    color: AppTheme.colors.accentDeep,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
+  },
+  errorEyebrow: {
+    color: AppTheme.colors.danger,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
+  },
+  stateTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
+  },
+  stateDescription: {
+    color: AppTheme.colors.textMuted,
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: Fonts.sans,
+  },
+  stateLoadingRow: {
+    marginTop: 6,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(168, 71, 52, 0.1)",
+    backgroundColor: "rgba(255, 249, 242, 0.56)",
+  },
+  stateLoadingOrb: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 249, 242, 0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(168, 71, 52, 0.1)",
+  },
+  stateLoadingText: {
+    flex: 1,
+    color: AppTheme.colors.inkSoft,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Fonts.sans,
+  },
+  stateAction: {
+    marginTop: 6,
+    alignSelf: "stretch",
   },
   inlineMeta: {
     gap: 4,

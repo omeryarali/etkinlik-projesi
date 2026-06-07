@@ -3,14 +3,32 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
+import {
+  ActionButton,
+  AdminSurface,
+  DetailModal,
+  EmptyPanel,
+  FilterSelect,
+  HeroAsidePanel,
+  HeroMiniStat,
+  InfoRow,
+  InfoSection,
+  LoadingPanel,
+  Notice,
+  PageHero,
+  PaginationBar,
+  StatusPill,
+  formatAdminDate,
+} from "../../components/admin-ui";
 import { apiFetch } from "../../lib/api";
-import { getAdminToken } from "../../lib/auth";
+import { getAdminToken, redirectToLogin } from "../../lib/auth";
 
 export default function OrganizersPage() {
   const searchParams = useSearchParams();
+  const initialStatus = searchParams.get("status") || "";
 
   const [organizers, setOrganizers] = useState([]);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState(null);
   const [selectedOrganizer, setSelectedOrganizer] = useState(null);
@@ -20,13 +38,10 @@ export default function OrganizersPage() {
 
   async function loadOrganizers(selectedStatus = status, selectedPage = page) {
     try {
-      setLoading(true);
-      setError("");
-
       const token = getAdminToken();
 
       if (!token) {
-        window.location.href = "/login";
+        redirectToLogin();
         return;
       }
 
@@ -47,6 +62,7 @@ export default function OrganizersPage() {
 
       setOrganizers(data.items || []);
       setPageInfo(data);
+      setError("");
     } catch (err) {
       setError(err.message || "Organizatörler alınamadı.");
     } finally {
@@ -113,363 +129,372 @@ export default function OrganizersPage() {
     }
   }
 
-  function handleStatusChange(e) {
-    const selectedStatus = e.target.value;
+  function handleStatusChange(event) {
+    const selectedStatus = event.target.value;
+    setLoading(true);
+    setError("");
     setStatus(selectedStatus);
     setPage(1);
-    loadOrganizers(selectedStatus, 1);
   }
 
   function goToPage(newPage) {
+    setLoading(true);
+    setError("");
     setPage(newPage);
-    loadOrganizers(status, newPage);
-  }
-
-  function formatDate(dateValue) {
-    if (!dateValue) return "-";
-
-    return new Date(dateValue).toLocaleString("tr-TR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
   }
 
   useEffect(() => {
-    const statusFromUrl = searchParams.get("status") || "";
+    let active = true;
 
-    setStatus(statusFromUrl);
-    setPage(1);
-    loadOrganizers(statusFromUrl, 1);
-  }, []);
+    async function fetchOrganizers() {
+      try {
+        const token = getAdminToken();
+
+        if (!token) {
+          redirectToLogin();
+          return;
+        }
+
+        const queryParams = new URLSearchParams();
+
+        if (status) {
+          queryParams.append("status", status);
+        }
+
+        queryParams.append("page", page);
+        queryParams.append("pageSize", 10);
+
+        const data = await apiFetch(`/api/Admin/organizers?${queryParams.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setOrganizers(data.items || []);
+        setPageInfo(data);
+        setError("");
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+
+        setError(err.message || "Organizatörler alınamadı.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void fetchOrganizers();
+
+    return () => {
+      active = false;
+    };
+  }, [page, status]);
+
+  const pendingCount = organizers.filter((item) => item.status === "Pending").length;
 
   return (
     <AdminLayout
       title="Organizatörler"
-      description="Organizatör başvurularını ve mevcut organizatörleri yönetin"
+      description="Başvuruları değerlendir, aktif organizer hesaplarını denetle ve topluluk güvenini koru."
     >
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Durum Filtresi
-          </label>
-          <select
-            value={status}
-            onChange={handleStatusChange}
-            className="mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500"
-          >
+      <div className="space-y-6">
+        <PageHero
+          eyebrow="Organizer ağı"
+          title="Topluluğu taşıyan organizer katmanını düzenli yönet."
+          description="Başvuru kalitesini yükseltmek, bölgesel dağılımı net görmek ve askıya alınması gereken profilleri hızlıca ayırmak için bu paneli kullan."
+          aside={
+            <HeroAsidePanel>
+              <div className="space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#efbf9d]">
+                  Başvuru özeti
+                </p>
+                <div className="rounded-[22px] border border-[#d39a7b]/20 bg-[linear-gradient(180deg,rgba(255,239,227,0.12),rgba(255,255,255,0.05))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,250,246,0.08)]">
+                  <p className="text-sm text-[#ead8cb]">Toplam sonuç</p>
+                  <p className="mt-2 font-[family:var(--font-admin-display)] text-4xl text-white">
+                    {pageInfo?.totalCount ?? 0}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <MiniStat label="Bekleyen" value={pendingCount} />
+                  <MiniStat label="Filtre" value={status || "Tümü"} />
+                </div>
+              </div>
+            </HeroAsidePanel>
+          }
+        >
+          <div className="flex flex-wrap gap-2">
+            <StatusPill tone="contrast">{status || "Tüm durumlar"}</StatusPill>
+            <StatusPill tone="contrast">{pendingCount} bekleyen başvuru</StatusPill>
+          </div>
+        </PageHero>
+
+        <AdminSurface className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <FilterSelect label="Durum filtresi" value={status} onChange={handleStatusChange}>
             <option value="">Tümü</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
             <option value="Suspended">Suspended</option>
-          </select>
-        </div>
+          </FilterSelect>
 
-        {pageInfo && (
-          <p className="text-sm text-gray-500">
-            Toplam kayıt: {pageInfo.totalCount}
-          </p>
-        )}
-      </div>
-
-      {error && (
-        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      <div className="rounded-xl bg-white border shadow-sm overflow-hidden">
-        {loading ? (
-          <p className="p-6 text-gray-500">Yükleniyor...</p>
-        ) : organizers.length === 0 ? (
-          <p className="p-6 text-gray-500">Kayıt bulunamadı.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    ID
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Organizatör
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Tip
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Konum
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Telefon
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Durum
-                  </th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                    İşlemler
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y">
-                {organizers.map((organizer) => (
-                  <tr key={organizer.id}>
-                    <td className="px-4 py-3 text-gray-600">
-                      {organizer.id}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {organizer.organizerName}
-                        </p>
-                        <p className="text-xs text-gray-500 line-clamp-1">
-                          {organizer.description}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {organizer.organizerType}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {organizer.city} / {organizer.district}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {organizer.phoneNumber}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <StatusBadge status={organizer.status} />
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedOrganizer(organizer)}
-                          className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
-                        >
-                          Detay
-                        </button>
-
-                        {organizer.status === "Pending" && (
-                          <button
-                            onClick={() => approveOrganizer(organizer.id)}
-                            disabled={actionLoadingId === organizer.id}
-                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-60"
-                          >
-                            Onayla
-                          </button>
-                        )}
-
-                        {organizer.status === "Approved" && (
-                          <button
-                            onClick={() => suspendOrganizer(organizer.id)}
-                            disabled={actionLoadingId === organizer.id}
-                            className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700 disabled:opacity-60"
-                          >
-                            Askıya Al
-                          </button>
-                        )}
-
-                        {organizer.status === "Suspended" && (
-                          <button
-                            onClick={() => reactivateOrganizer(organizer.id)}
-                            disabled={actionLoadingId === organizer.id}
-                            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-                          >
-                            Aktif Et
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rounded-[24px] border border-[#eadccf] bg-[#f7f0e7]/80 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a16846]">
+              Sayfa özeti
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#6f5a4f]">
+              Bu görünümde {organizers.length} organizer kaydı listeleniyor.
+            </p>
           </div>
+        </AdminSurface>
+
+        {error ? (
+          <Notice
+            tone="danger"
+            title="Organizer verileri alınamadı"
+            description={error}
+          />
+        ) : null}
+
+        {loading ? (
+          <LoadingPanel
+            title="Organizer listesi hazırlanıyor"
+            description="Başvuru durumları ve bölgesel bilgiler kısa süre içinde tabloya yerleşecek."
+          />
+        ) : organizers.length === 0 ? (
+          <EmptyPanel
+            title="Organizer kaydı bulunamadı"
+            description="Seçtiğin filtreye uygun organizer görünmüyor. Farklı bir durum filtresiyle yeniden deneyebilirsin."
+            actionLabel="Filtreyi Temizle"
+            onAction={() => {
+              setLoading(true);
+              setError("");
+              setStatus("");
+              setPage(1);
+            }}
+          />
+        ) : (
+          <AdminSurface padded={false} className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-[#eee1d5] bg-[#fbf6f1]">
+                  <tr>
+                    <HeaderCell>ID</HeaderCell>
+                    <HeaderCell>Organizatör</HeaderCell>
+                    <HeaderCell>Tip</HeaderCell>
+                    <HeaderCell>Konum</HeaderCell>
+                    <HeaderCell>Telefon</HeaderCell>
+                    <HeaderCell>Durum</HeaderCell>
+                    <HeaderCell align="right">İşlemler</HeaderCell>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-[#f0e4d8]">
+                  {organizers.map((organizer) => (
+                    <tr key={organizer.id} className="bg-white/72 transition hover:bg-[#fcf7f2]">
+                      <Cell>{organizer.id}</Cell>
+                      <Cell>
+                        <div className="space-y-1">
+                          <p className="font-semibold text-[#241a16]">
+                            {organizer.organizerName}
+                          </p>
+                          <p className="max-w-xs text-xs leading-5 text-[#816e63]">
+                            {organizer.description || "Açıklama girilmedi."}
+                          </p>
+                        </div>
+                      </Cell>
+                      <Cell>{organizer.organizerType}</Cell>
+                      <Cell>{organizer.city} / {organizer.district}</Cell>
+                      <Cell>{organizer.phoneNumber}</Cell>
+                      <Cell>
+                        <OrganizerStatusBadge status={organizer.status} />
+                      </Cell>
+                      <Cell align="right">
+                        <div className="flex justify-end gap-2">
+                          <ActionButton
+                            tone="secondary"
+                            onClick={() => setSelectedOrganizer(organizer)}
+                          >
+                            Detay
+                          </ActionButton>
+
+                          {organizer.status === "Pending" ? (
+                            <ActionButton
+                              tone="success"
+                              onClick={() => approveOrganizer(organizer.id)}
+                              disabled={actionLoadingId === organizer.id}
+                            >
+                              Onayla
+                            </ActionButton>
+                          ) : null}
+
+                          {organizer.status === "Approved" ? (
+                            <ActionButton
+                              tone="warning"
+                              onClick={() => suspendOrganizer(organizer.id)}
+                              disabled={actionLoadingId === organizer.id}
+                            >
+                              Askıya Al
+                            </ActionButton>
+                          ) : null}
+
+                          {organizer.status === "Suspended" ? (
+                            <ActionButton
+                              tone="primary"
+                              onClick={() => reactivateOrganizer(organizer.id)}
+                              disabled={actionLoadingId === organizer.id}
+                            >
+                              Aktif Et
+                            </ActionButton>
+                          ) : null}
+                        </div>
+                      </Cell>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </AdminSurface>
         )}
-      </div>
 
-      {pageInfo && pageInfo.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            onClick={() => goToPage(page - 1)}
-            disabled={!pageInfo.hasPreviousPage}
-            className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
-          >
-            Önceki
-          </button>
-
-          <p className="text-sm text-gray-600">
-            Sayfa {pageInfo.page} / {pageInfo.totalPages}
-          </p>
-
-          <button
-            onClick={() => goToPage(page + 1)}
-            disabled={!pageInfo.hasNextPage}
-            className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
-          >
-            Sonraki
-          </button>
-        </div>
-      )}
-
-      {selectedOrganizer && (
-        <OrganizerDetailModal
-          organizer={selectedOrganizer}
-          onClose={() => setSelectedOrganizer(null)}
-          onApprove={approveOrganizer}
-          onSuspend={suspendOrganizer}
-          onReactivate={reactivateOrganizer}
-          actionLoadingId={actionLoadingId}
-          formatDate={formatDate}
+        <PaginationBar
+          pageInfo={pageInfo}
+          onPrevious={() => goToPage(page - 1)}
+          onNext={() => goToPage(page + 1)}
         />
-      )}
+
+        <DetailModal
+          open={!!selectedOrganizer}
+          title={selectedOrganizer?.organizerName}
+          subtitle={
+            selectedOrganizer
+              ? `Organizer ID: ${selectedOrganizer.id} · Kullanıcı ID: ${selectedOrganizer.userId}`
+              : ""
+          }
+          onClose={() => setSelectedOrganizer(null)}
+          footer={
+            selectedOrganizer ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                {selectedOrganizer.status === "Pending" ? (
+                  <ActionButton
+                    tone="success"
+                    onClick={() => approveOrganizer(selectedOrganizer.id)}
+                    disabled={actionLoadingId === selectedOrganizer.id}
+                  >
+                    Onayla
+                  </ActionButton>
+                ) : null}
+                {selectedOrganizer.status === "Approved" ? (
+                  <ActionButton
+                    tone="warning"
+                    onClick={() => suspendOrganizer(selectedOrganizer.id)}
+                    disabled={actionLoadingId === selectedOrganizer.id}
+                  >
+                    Askıya Al
+                  </ActionButton>
+                ) : null}
+                {selectedOrganizer.status === "Suspended" ? (
+                  <ActionButton
+                    tone="primary"
+                    onClick={() => reactivateOrganizer(selectedOrganizer.id)}
+                    disabled={actionLoadingId === selectedOrganizer.id}
+                  >
+                    Aktif Et
+                  </ActionButton>
+                ) : null}
+              </div>
+            ) : null
+          }
+        >
+          {selectedOrganizer ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-2">
+                <OrganizerStatusBadge status={selectedOrganizer.status} />
+              </div>
+
+              <InfoSection title="Organizer bilgileri">
+                <InfoRow label="Organizer adı" value={selectedOrganizer.organizerName} />
+                <InfoRow label="Organizer tipi" value={selectedOrganizer.organizerType} />
+                <InfoRow label="Açıklama" value={selectedOrganizer.description} />
+                <InfoRow label="Telefon" value={selectedOrganizer.phoneNumber} />
+                <InfoRow label="Instagram" value={selectedOrganizer.instagramUrl || "-"} />
+              </InfoSection>
+
+              <InfoSection title="Konum ve tarih">
+                <InfoRow
+                  label="Şehir / ilçe"
+                  value={`${selectedOrganizer.city} / ${selectedOrganizer.district}`}
+                />
+                <InfoRow
+                  label="Oluşturulma tarihi"
+                  value={formatAdminDate(selectedOrganizer.createdAt)}
+                />
+                <InfoRow
+                  label="Onay tarihi"
+                  value={formatAdminDate(selectedOrganizer.approvedAt)}
+                />
+              </InfoSection>
+
+              <InfoSection title="Durum notu">
+                <InfoRow
+                  label="Red sebebi"
+                  value={selectedOrganizer.rejectionReason || "-"}
+                />
+              </InfoSection>
+            </div>
+          ) : null}
+        </DetailModal>
+      </div>
     </AdminLayout>
   );
 }
 
-function OrganizerDetailModal({
-  organizer,
-  onClose,
-  onApprove,
-  onSuspend,
-  onReactivate,
-  actionLoadingId,
-  formatDate,
-}) {
+function HeaderCell({ children, align = "left" }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
-        <div className="border-b px-6 py-4 flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">
-              {organizer.organizerName}
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Organizatör ID: {organizer.id} | Kullanıcı ID: {organizer.userId}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            Kapat
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-6">
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Durum</p>
-            <div className="mt-2">
-              <StatusBadge status={organizer.status} />
-            </div>
-          </div>
-
-          <InfoSection title="Organizatör Bilgileri">
-            <InfoRow label="Organizatör Adı" value={organizer.organizerName} />
-            <InfoRow label="Organizatör Tipi" value={organizer.organizerType} />
-            <InfoRow label="Açıklama" value={organizer.description} />
-            <InfoRow label="Telefon" value={organizer.phoneNumber} />
-            <InfoRow label="Instagram" value={organizer.instagramUrl || "-"} />
-          </InfoSection>
-
-          <InfoSection title="Konum ve Tarih">
-            <InfoRow
-              label="Şehir / İlçe"
-              value={`${organizer.city} / ${organizer.district}`}
-            />
-            <InfoRow
-              label="Oluşturulma Tarihi"
-              value={formatDate(organizer.createdAt)}
-            />
-            <InfoRow
-              label="Onay Tarihi"
-              value={formatDate(organizer.approvedAt)}
-            />
-          </InfoSection>
-
-          <InfoSection title="Red / Durum Bilgisi">
-            <InfoRow label="Red Sebebi" value={organizer.rejectionReason || "-"} />
-          </InfoSection>
-        </div>
-
-        <div className="border-t px-6 py-4 flex justify-end gap-3">
-          {organizer.status === "Pending" && (
-            <button
-              onClick={() => onApprove(organizer.id)}
-              disabled={actionLoadingId === organizer.id}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
-            >
-              Onayla
-            </button>
-          )}
-
-          {organizer.status === "Approved" && (
-            <button
-              onClick={() => onSuspend(organizer.id)}
-              disabled={actionLoadingId === organizer.id}
-              className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-60"
-            >
-              Askıya Al
-            </button>
-          )}
-
-          {organizer.status === "Suspended" && (
-            <button
-              onClick={() => onReactivate(organizer.id)}
-              disabled={actionLoadingId === organizer.id}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              Aktif Et
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoSection({ title, children }) {
-  return (
-    <div>
-      <h4 className="text-sm font-bold text-gray-800 mb-3">{title}</h4>
-      <div className="rounded-lg border divide-y">{children}</div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 py-3 text-sm">
-      <p className="font-medium text-gray-600">{label}</p>
-      <p className="sm:col-span-2 text-gray-800 whitespace-pre-wrap">
-        {value || "-"}
-      </p>
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    Approved: "bg-green-100 text-green-800",
-    Rejected: "bg-red-100 text-red-800",
-    Suspended: "bg-orange-100 text-orange-800",
-  };
-
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-medium ${
-        styles[status] || "bg-gray-100 text-gray-700"
+    <th
+      className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8c7769] ${
+        align === "right" ? "text-right" : "text-left"
       }`}
     >
-      {status}
-    </span>
+      {children}
+    </th>
   );
+}
+
+function Cell({ children, align = "left" }) {
+  return (
+    <td
+      className={`px-5 py-4 align-top text-[#645347] ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function MiniStat({ label, value }) {
+  const toneMap = {
+    Bekleyen: "warm",
+    Filtre: "rose",
+  };
+
+  return <HeroMiniStat label={label} value={value} tone={toneMap[label] || "neutral"} />;
+}
+
+function OrganizerStatusBadge({ status }) {
+  const tones = {
+    Pending: "warning",
+    Approved: "success",
+    Rejected: "danger",
+    Suspended: "info",
+  };
+
+  return <StatusPill tone={tones[status] || "neutral"}>{status}</StatusPill>;
 }

@@ -1,7 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,8 @@ import {
   AppBackButton,
   AppCard,
   DetailRow,
+  ErrorStateCard,
+  LoadingStateCard,
   MetricTile,
   PrimaryButton,
   ProgressTrack,
@@ -211,8 +212,10 @@ export default function EventDetailScreen() {
       <View style={styles.screen}>
         <AmbientBackdrop />
         <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
-          <ActivityIndicator color={AppTheme.colors.accentDeep} />
-          <Text style={styles.infoText}>Etkinlik detayı hazırlanıyor...</Text>
+          <LoadingStateCard
+            title="Etkinlik detayı hazırlanıyor"
+            description="Seçtiğin etkinliğin tarih, konum ve katılım bilgileri yükleniyor."
+          />
         </View>
       </View>
     );
@@ -223,7 +226,14 @@ export default function EventDetailScreen() {
       <View style={styles.screen}>
         <AmbientBackdrop />
         <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
-          <Text style={styles.errorText}>{error || "Etkinlik bulunamadı."}</Text>
+          <ErrorStateCard
+            title="Etkinlik ekranı açılamadı"
+            description={error || "Etkinlik bilgilerine şu anda ulaşılamıyor."}
+            actionLabel="Tekrar Dene"
+            onAction={() => {
+              void loadEventDetail();
+            }}
+          />
           <SecondaryButton label="Geri Dön" onPress={() => router.back()} />
         </View>
       </View>

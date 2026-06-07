@@ -3,14 +3,32 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
+import {
+  ActionButton,
+  AdminSurface,
+  DetailModal,
+  EmptyPanel,
+  FilterSelect,
+  HeroAsidePanel,
+  HeroMiniStat,
+  InfoRow,
+  InfoSection,
+  LoadingPanel,
+  Notice,
+  PageHero,
+  PaginationBar,
+  StatusPill,
+  formatAdminDate,
+} from "../../components/admin-ui";
 import { apiFetch } from "../../lib/api";
-import { getAdminToken } from "../../lib/auth";
+import { getAdminToken, redirectToLogin } from "../../lib/auth";
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
+  const initialStatus = searchParams.get("status") || "";
 
   const [events, setEvents] = useState([]);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -20,13 +38,10 @@ export default function EventsPage() {
 
   async function loadEvents(selectedStatus = status, selectedPage = page) {
     try {
-      setLoading(true);
-      setError("");
-
       const token = getAdminToken();
 
       if (!token) {
-        window.location.href = "/login";
+        redirectToLogin();
         return;
       }
 
@@ -47,6 +62,7 @@ export default function EventsPage() {
 
       setEvents(data.items || []);
       setPageInfo(data);
+      setError("");
     } catch (err) {
       setError(err.message || "Etkinlikler alınamadı.");
     } finally {
@@ -55,9 +71,7 @@ export default function EventsPage() {
   }
 
   async function approveEvent(id) {
-    const confirmed = window.confirm(
-      "Bu etkinliği onaylamak istediğinize emin misiniz?"
-    );
+    const confirmed = window.confirm("Bu etkinliği onaylamak istediğinize emin misiniz?");
 
     if (!confirmed) {
       return;
@@ -67,9 +81,7 @@ export default function EventsPage() {
   }
 
   async function rejectEvent(id) {
-    const confirmed = window.confirm(
-      "Bu etkinliği reddetmek istediğinize emin misiniz?"
-    );
+    const confirmed = window.confirm("Bu etkinliği reddetmek istediğinize emin misiniz?");
 
     if (!confirmed) {
       return;
@@ -101,378 +113,366 @@ export default function EventsPage() {
     }
   }
 
-  function handleStatusChange(e) {
-    const selectedStatus = e.target.value;
+  function handleStatusChange(event) {
+    const selectedStatus = event.target.value;
+    setLoading(true);
+    setError("");
     setStatus(selectedStatus);
     setPage(1);
-    loadEvents(selectedStatus, 1);
   }
 
   function goToPage(newPage) {
+    setLoading(true);
+    setError("");
     setPage(newPage);
-    loadEvents(status, newPage);
-  }
-
-  function formatDate(dateValue) {
-    if (!dateValue) return "-";
-
-    return new Date(dateValue).toLocaleString("tr-TR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
   }
 
   useEffect(() => {
-    const statusFromUrl = searchParams.get("status") || "";
+    let active = true;
 
-    setStatus(statusFromUrl);
-    setPage(1);
-    loadEvents(statusFromUrl, 1);
-  }, []);
+    async function fetchEvents() {
+      try {
+        const token = getAdminToken();
+
+        if (!token) {
+          redirectToLogin();
+          return;
+        }
+
+        const queryParams = new URLSearchParams();
+
+        if (status) {
+          queryParams.append("status", status);
+        }
+
+        queryParams.append("page", page);
+        queryParams.append("pageSize", 10);
+
+        const data = await apiFetch(`/api/Admin/events?${queryParams.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setEvents(data.items || []);
+        setPageInfo(data);
+        setError("");
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+
+        setError(err.message || "Etkinlikler alınamadı.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void fetchEvents();
+
+    return () => {
+      active = false;
+    };
+  }, [page, status]);
+
+  const pendingCount = events.filter((item) => item.status === "Pending").length;
 
   return (
     <AdminLayout
       title="Etkinlikler"
-      description="Etkinlik başvurularını ve mevcut etkinlikleri yönetin"
+      description="Onay sürecindeki ve yayındaki etkinlikleri kalite odaklı şekilde yönet."
     >
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Durum Filtresi
-          </label>
-          <select
-            value={status}
-            onChange={handleStatusChange}
-            className="mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500"
-          >
+      <div className="space-y-6">
+        <PageHero
+          eyebrow="Etkinlik kontrolü"
+          title="Başvurudan yayına kadar tüm etkinlikleri tek merkezden değerlendir."
+          description="Organizatör kalitesi, içerik netliği, kapasite dengesi ve konum doğruluğu için etkinlik kuyruğunu düzenli takip et."
+          aside={
+            <HeroAsidePanel>
+              <div className="space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#efbf9d]">
+                  Kuyruk özeti
+                </p>
+                <div className="rounded-[22px] border border-[#d39a7b]/20 bg-[linear-gradient(180deg,rgba(255,239,227,0.12),rgba(255,255,255,0.05))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,250,246,0.08)]">
+                  <p className="text-sm text-[#ead8cb]">Toplam sonuç</p>
+                  <p className="mt-2 font-[family:var(--font-admin-display)] text-4xl text-white">
+                    {pageInfo?.totalCount ?? 0}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <MiniStat label="Bekleyen" value={pendingCount} />
+                  <MiniStat label="Filtre" value={status || "Tümü"} />
+                </div>
+              </div>
+            </HeroAsidePanel>
+          }
+        >
+          <div className="flex flex-wrap gap-2">
+            <StatusPill tone="contrast">{status || "Tüm durumlar"}</StatusPill>
+            <StatusPill tone="contrast">{pendingCount} bekleyen kayıt</StatusPill>
+          </div>
+        </PageHero>
+
+        <AdminSurface className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <FilterSelect label="Durum filtresi" value={status} onChange={handleStatusChange}>
             <option value="">Tümü</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
             <option value="Cancelled">Cancelled</option>
             <option value="Completed">Completed</option>
-          </select>
-        </div>
+          </FilterSelect>
 
-        {pageInfo && (
-          <p className="text-sm text-gray-500">
-            Toplam kayıt: {pageInfo.totalCount}
-          </p>
-        )}
-      </div>
-
-      {error && (
-        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      <div className="rounded-xl bg-white border shadow-sm overflow-hidden">
-        {loading ? (
-          <p className="p-6 text-gray-500">Yükleniyor...</p>
-        ) : events.length === 0 ? (
-          <p className="p-6 text-gray-500">Kayıt bulunamadı.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    ID
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Etkinlik
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Organizatör
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Kategori
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Konum
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Tarih
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Kontenjan
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                    Durum
-                  </th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                    İşlemler
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y">
-                {events.map((event) => (
-                  <tr key={event.id}>
-                    <td className="px-4 py-3 text-gray-600">{event.id}</td>
-
-                    <td className="px-4 py-3 min-w-64">
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {event.title}
-                        </p>
-                        <p className="text-xs text-gray-500 line-clamp-1">
-                          {event.description}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {event.isPaid
-                            ? `Ücretli - ${event.price ?? 0} TL`
-                            : "Ücretsiz"}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {event.organizerName}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {event.categoryName}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600">
-                      {event.city} / {event.district}
-                      <p className="text-xs text-gray-400">
-                        {event.locationName}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                      {formatDate(event.startDate)}
-                    </td>
-
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                      {event.participantCount} / {event.capacity}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <StatusBadge status={event.status} />
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedEvent(event)}
-                          className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
-                        >
-                          Detay
-                        </button>
-
-                        {event.status === "Pending" && (
-                          <>
-                            <button
-                              onClick={() => approveEvent(event.id)}
-                              disabled={actionLoadingId === event.id}
-                              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-60"
-                            >
-                              Onayla
-                            </button>
-
-                            <button
-                              onClick={() => rejectEvent(event.id)}
-                              disabled={actionLoadingId === event.id}
-                              className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
-                            >
-                              Reddet
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rounded-[24px] border border-[#eadccf] bg-[#f7f0e7]/80 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a16846]">
+              Sayfa özeti
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#6f5a4f]">
+              Bu görünümde {events.length} etkinlik listeleniyor.
+            </p>
           </div>
+        </AdminSurface>
+
+        {error ? (
+          <Notice
+            tone="danger"
+            title="Etkinlik verileri alınamadı"
+            description={error}
+          />
+        ) : null}
+
+        {loading ? (
+          <LoadingPanel
+            title="Etkinlik kuyruğu hazırlanıyor"
+            description="Başvuru durumu, kapasite ve içerik bilgileri kısa süre içinde tabloya yerleşecek."
+          />
+        ) : events.length === 0 ? (
+          <EmptyPanel
+            title="Etkinlik bulunamadı"
+            description="Seçtiğin filtreye uygun etkinlik görünmüyor. Farklı bir durum filtresiyle yeniden deneyebilirsin."
+            actionLabel="Filtreyi Temizle"
+            onAction={() => {
+              setLoading(true);
+              setError("");
+              setStatus("");
+              setPage(1);
+            }}
+          />
+        ) : (
+          <AdminSurface padded={false} className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-[#eee1d5] bg-[#fbf6f1]">
+                  <tr>
+                    <HeaderCell>ID</HeaderCell>
+                    <HeaderCell>Etkinlik</HeaderCell>
+                    <HeaderCell>Organizatör</HeaderCell>
+                    <HeaderCell>Kategori</HeaderCell>
+                    <HeaderCell>Konum</HeaderCell>
+                    <HeaderCell>Tarih</HeaderCell>
+                    <HeaderCell>Kontenjan</HeaderCell>
+                    <HeaderCell>Durum</HeaderCell>
+                    <HeaderCell align="right">İşlemler</HeaderCell>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-[#f0e4d8]">
+                  {events.map((event) => (
+                    <tr key={event.id} className="bg-white/72 transition hover:bg-[#fcf7f2]">
+                      <Cell>{event.id}</Cell>
+                      <Cell>
+                        <div className="space-y-1">
+                          <p className="font-semibold text-[#241a16]">{event.title}</p>
+                          <p className="max-w-xs text-xs leading-5 text-[#816e63]">
+                            {event.description || "Açıklama girilmedi."}
+                          </p>
+                          <p className="text-xs font-medium text-[#b06a47]">
+                            {event.isPaid ? `${event.price ?? 0} TL` : "Ücretsiz"}
+                          </p>
+                        </div>
+                      </Cell>
+                      <Cell>{event.organizerName}</Cell>
+                      <Cell>{event.categoryName}</Cell>
+                      <Cell>
+                        <div className="space-y-1">
+                          <p>{event.city} / {event.district}</p>
+                          <p className="text-xs text-[#8a7668]">{event.locationName}</p>
+                        </div>
+                      </Cell>
+                      <Cell>{formatAdminDate(event.startDate)}</Cell>
+                      <Cell>{event.participantCount} / {event.capacity}</Cell>
+                      <Cell>
+                        <EventStatusBadge status={event.status} />
+                      </Cell>
+                      <Cell align="right">
+                        <div className="flex justify-end gap-2">
+                          <ActionButton
+                            tone="secondary"
+                            onClick={() => setSelectedEvent(event)}
+                          >
+                            Detay
+                          </ActionButton>
+
+                          {event.status === "Pending" ? (
+                            <>
+                              <ActionButton
+                                tone="success"
+                                onClick={() => approveEvent(event.id)}
+                                disabled={actionLoadingId === event.id}
+                              >
+                                Onayla
+                              </ActionButton>
+                              <ActionButton
+                                tone="danger"
+                                onClick={() => rejectEvent(event.id)}
+                                disabled={actionLoadingId === event.id}
+                              >
+                                Reddet
+                              </ActionButton>
+                            </>
+                          ) : null}
+                        </div>
+                      </Cell>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </AdminSurface>
         )}
-      </div>
 
-      {pageInfo && pageInfo.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            onClick={() => goToPage(page - 1)}
-            disabled={!pageInfo.hasPreviousPage}
-            className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
-          >
-            Önceki
-          </button>
-
-          <p className="text-sm text-gray-600">
-            Sayfa {pageInfo.page} / {pageInfo.totalPages}
-          </p>
-
-          <button
-            onClick={() => goToPage(page + 1)}
-            disabled={!pageInfo.hasNextPage}
-            className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
-          >
-            Sonraki
-          </button>
-        </div>
-      )}
-
-      {selectedEvent && (
-        <EventDetailModal
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          onApprove={approveEvent}
-          onReject={rejectEvent}
-          actionLoadingId={actionLoadingId}
-          formatDate={formatDate}
+        <PaginationBar
+          pageInfo={pageInfo}
+          onPrevious={() => goToPage(page - 1)}
+          onNext={() => goToPage(page + 1)}
         />
-      )}
+
+        <DetailModal
+          open={!!selectedEvent}
+          title={selectedEvent?.title}
+          subtitle={
+            selectedEvent
+              ? `${selectedEvent.categoryName} · ${selectedEvent.organizerName}`
+              : ""
+          }
+          onClose={() => setSelectedEvent(null)}
+          footer={
+            selectedEvent?.status === "Pending" ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <ActionButton
+                  tone="danger"
+                  onClick={() => rejectEvent(selectedEvent.id)}
+                  disabled={actionLoadingId === selectedEvent.id}
+                >
+                  Reddet
+                </ActionButton>
+                <ActionButton
+                  tone="success"
+                  onClick={() => approveEvent(selectedEvent.id)}
+                  disabled={actionLoadingId === selectedEvent.id}
+                >
+                  Onayla
+                </ActionButton>
+              </div>
+            ) : null
+          }
+        >
+          {selectedEvent ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-2">
+                <EventStatusBadge status={selectedEvent.status} />
+                <StatusPill tone={selectedEvent.isPaid ? "warning" : "success"}>
+                  {selectedEvent.isPaid ? "Ücretli" : "Ücretsiz"}
+                </StatusPill>
+              </div>
+
+              <InfoSection title="Temel bilgiler">
+                <InfoRow label="Başlık" value={selectedEvent.title} />
+                <InfoRow label="Açıklama" value={selectedEvent.description} />
+                <InfoRow label="Organizatör" value={selectedEvent.organizerName} />
+                <InfoRow label="Kategori" value={selectedEvent.categoryName} />
+              </InfoSection>
+
+              <InfoSection title="Tarih ve konum">
+                <InfoRow label="Başlangıç" value={formatAdminDate(selectedEvent.startDate)} />
+                <InfoRow label="Bitiş" value={formatAdminDate(selectedEvent.endDate)} />
+                <InfoRow
+                  label="Şehir / ilçe"
+                  value={`${selectedEvent.city} / ${selectedEvent.district}`}
+                />
+                <InfoRow label="Konum adı" value={selectedEvent.locationName} />
+                <InfoRow label="Adres" value={selectedEvent.address} />
+              </InfoSection>
+
+              <InfoSection title="Katılım ve içerik">
+                <InfoRow
+                  label="Kontenjan"
+                  value={`${selectedEvent.participantCount} / ${selectedEvent.capacity}`}
+                />
+                <InfoRow
+                  label="Ücret"
+                  value={
+                    selectedEvent.isPaid ? `${selectedEvent.price ?? 0} TL` : "Ücretsiz"
+                  }
+                />
+                <InfoRow label="Kurallar" value={selectedEvent.rules || "-"} />
+                <InfoRow label="Kapak görseli" value={selectedEvent.coverImageUrl || "-"} />
+              </InfoSection>
+            </div>
+          ) : null}
+        </DetailModal>
+      </div>
     </AdminLayout>
   );
 }
 
-function EventDetailModal({
-  event,
-  onClose,
-  onApprove,
-  onReject,
-  actionLoadingId,
-  formatDate,
-}) {
+function HeaderCell({ children, align = "left" }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
-        <div className="border-b px-6 py-4 flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">{event.title}</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Etkinlik ID: {event.id}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            Kapat
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-6">
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Durum</p>
-            <div className="mt-2">
-              <StatusBadge status={event.status} />
-            </div>
-          </div>
-
-          <InfoSection title="Temel Bilgiler">
-            <InfoRow label="Başlık" value={event.title} />
-            <InfoRow label="Açıklama" value={event.description} />
-            <InfoRow label="Organizatör" value={event.organizerName} />
-            <InfoRow label="Kategori" value={event.categoryName} />
-          </InfoSection>
-
-          <InfoSection title="Tarih ve Konum">
-            <InfoRow label="Başlangıç" value={formatDate(event.startDate)} />
-            <InfoRow label="Bitiş" value={formatDate(event.endDate)} />
-            <InfoRow
-              label="Şehir / İlçe"
-              value={`${event.city} / ${event.district}`}
-            />
-            <InfoRow label="Konum Adı" value={event.locationName} />
-            <InfoRow label="Adres" value={event.address} />
-            <InfoRow
-              label="Koordinat"
-              value={
-                event.latitude && event.longitude
-                  ? `${event.latitude}, ${event.longitude}`
-                  : "-"
-              }
-            />
-          </InfoSection>
-
-          <InfoSection title="Katılım ve Ücret">
-            <InfoRow
-              label="Kontenjan"
-              value={`${event.participantCount} / ${event.capacity}`}
-            />
-            <InfoRow
-              label="Ücret Durumu"
-              value={event.isPaid ? "Ücretli" : "Ücretsiz"}
-            />
-            <InfoRow
-              label="Fiyat"
-              value={event.isPaid ? `${event.price ?? 0} TL` : "-"}
-            />
-          </InfoSection>
-
-          <InfoSection title="Kurallar ve Görsel">
-            <InfoRow label="Kurallar" value={event.rules || "-"} />
-            <InfoRow label="Kapak Görseli" value={event.coverImageUrl || "-"} />
-          </InfoSection>
-        </div>
-
-        {event.status === "Pending" && (
-          <div className="border-t px-6 py-4 flex justify-end gap-3">
-            <button
-              onClick={() => onReject(event.id)}
-              disabled={actionLoadingId === event.id}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
-            >
-              Reddet
-            </button>
-
-            <button
-              onClick={() => onApprove(event.id)}
-              disabled={actionLoadingId === event.id}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
-            >
-              Onayla
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function InfoSection({ title, children }) {
-  return (
-    <div>
-      <h4 className="text-sm font-bold text-gray-800 mb-3">{title}</h4>
-      <div className="rounded-lg border divide-y">{children}</div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 py-3 text-sm">
-      <p className="font-medium text-gray-600">{label}</p>
-      <p className="sm:col-span-2 text-gray-800 whitespace-pre-wrap">
-        {value || "-"}
-      </p>
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    Approved: "bg-green-100 text-green-800",
-    Rejected: "bg-red-100 text-red-800",
-    Cancelled: "bg-gray-100 text-gray-700",
-    Completed: "bg-blue-100 text-blue-800",
-  };
-
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-medium ${
-        styles[status] || "bg-gray-100 text-gray-700"
+    <th
+      className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8c7769] ${
+        align === "right" ? "text-right" : "text-left"
       }`}
     >
-      {status}
-    </span>
+      {children}
+    </th>
   );
+}
+
+function Cell({ children, align = "left" }) {
+  return (
+    <td
+      className={`px-5 py-4 align-top text-[#645347] ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function MiniStat({ label, value }) {
+  const toneMap = {
+    Bekleyen: "warm",
+    Filtre: "sand",
+  };
+
+  return <HeroMiniStat label={label} value={value} tone={toneMap[label] || "neutral"} />;
+}
+
+function EventStatusBadge({ status }) {
+  const tones = {
+    Pending: "warning",
+    Approved: "success",
+    Rejected: "danger",
+    Cancelled: "neutral",
+    Completed: "info",
+  };
+
+  return <StatusPill tone={tones[status] || "neutral"}>{status}</StatusPill>;
 }

@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   AmbientBackdrop,
-  AppCard,
   EmptyStateCard,
+  ErrorStateCard,
+  LoadingStateCard,
   SectionHeading,
 } from "../../components/app-ui";
 import { EventCard } from "../../components/event-card";
@@ -71,12 +72,12 @@ export default function MyEventsScreen() {
       return;
     }
 
-    loadEvents(pageInfo.page + 1);
+    void loadEvents(pageInfo.page + 1);
   }
 
   useFocusEffect(
     useCallback(() => {
-      loadEvents(1, true);
+      void loadEvents(1, true);
     }, [])
   );
 
@@ -97,33 +98,34 @@ export default function MyEventsScreen() {
         ListHeaderComponent={
           <View style={styles.headerStack}>
             <SectionHeading
-              eyebrow="Takip ettiğin planlar"
-              title="Katıldığım etkinlikler"
+              eyebrow="Planların"
+              title="Etkinliklerim"
               subtitle={
                 pageInfo
-                  ? `${pageInfo.totalCount} etkinlik senin listende`
-                  : "Geçmiş ve yaklaşan katılımlarını burada görürsün."
+                  ? `${pageInfo.totalCount} etkinlik listende görünüyor`
+                  : "Geçmiş ve yaklaşan katılımlarını burada takip edersin."
               }
             />
           </View>
         }
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <LoadingStateCard
+              title="Etkinliklerin hazırlanıyor"
+              description="Katıldığın planlar kısa süre içinde burada listelenecek."
+            />
+          ) : !error ? (
             <EmptyStateCard
+              eyebrow="Liste henüz boş"
               title="Henüz katıldığın etkinlik yok"
-              description="Ana akıştan ilgini çeken bir etkinliğe katıl ve burada takibini yap."
+              description="Keşfetten ilgini çeken bir etkinliğe katıl, takibini burada yap."
+              actionLabel="Keşfe Dön"
+              onAction={() => router.push("/" as any)}
             />
           ) : null
         }
         ListFooterComponent={
           <>
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={AppTheme.colors.accentDeep} />
-                <Text style={styles.loadingText}>Etkinliklerin yükleniyor...</Text>
-              </View>
-            ) : null}
-
             {loadingMore ? (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={AppTheme.colors.accentDeep} />
@@ -132,9 +134,14 @@ export default function MyEventsScreen() {
             ) : null}
 
             {!loading && error ? (
-              <AppCard tone="muted">
-                <Text style={styles.errorText}>{error}</Text>
-              </AppCard>
+              <ErrorStateCard
+                title="Etkinliklerin alınamadı"
+                description={error}
+                actionLabel="Tekrar Dene"
+                onAction={() => {
+                  void loadEvents(1, true);
+                }}
+              />
             ) : null}
           </>
         }
@@ -172,12 +179,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: AppTheme.colors.textMuted,
     fontSize: 14,
-    fontFamily: Fonts.sans,
-  },
-  errorText: {
-    color: AppTheme.colors.danger,
-    fontSize: 14,
-    lineHeight: 21,
     fontFamily: Fonts.sans,
   },
 });

@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -9,7 +9,9 @@ import {
   AppCard,
   DangerButton,
   DetailRow,
+  ErrorStateCard,
   InkButton,
+  LoadingStateCard,
   PrimaryButton,
   ProgressTrack,
   SectionHeading,
@@ -195,8 +197,10 @@ export default function OrganizerEventDetailScreen() {
       <View style={styles.screen}>
         <AmbientBackdrop />
         <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
-          <ActivityIndicator color={AppTheme.colors.accentDeep} />
-          <Text style={styles.infoText}>Organizer detay hazırlanıyor...</Text>
+          <LoadingStateCard
+            title="Organizer detay hazırlanıyor"
+            description="Etkinliğin yönetim bilgileri ve son durumu yükleniyor."
+          />
         </View>
       </View>
     );
@@ -207,7 +211,14 @@ export default function OrganizerEventDetailScreen() {
       <View style={styles.screen}>
         <AmbientBackdrop />
         <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
-          <Text style={styles.errorText}>{error || "Etkinlik bulunamadı."}</Text>
+          <ErrorStateCard
+            title="Organizer ekranı açılamadı"
+            description={error || "Bu etkinliğin yönetim bilgileri getirilemedi."}
+            actionLabel="Tekrar Dene"
+            onAction={() => {
+              void loadOrganizerEventDetail();
+            }}
+          />
           <DangerButton label="Geri Dön" onPress={() => router.back()} />
         </View>
       </View>

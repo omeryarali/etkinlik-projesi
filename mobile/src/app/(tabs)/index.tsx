@@ -17,6 +17,8 @@ import {
   AppCard,
   ChoicePill,
   EmptyStateCard,
+  ErrorStateCard,
+  LoadingStateCard,
   MetricTile,
   PrimaryButton,
   SecondaryButton,
@@ -557,22 +559,23 @@ export default function HomeScreen() {
         ]}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <LoadingStateCard
+              title="Keşif akışı hazırlanıyor"
+              description="Şehrindeki etkinlikler ve öne çıkan planlar senin için yükleniyor."
+            />
+          ) : !error ? (
             <EmptyStateCard
+              eyebrow="Sonuç bulunamadı"
               title="Uygun etkinlik bulunamadı"
               description="Filtrelerini biraz gevşet veya başka bir şehir ve tarih seçerek yeniden dene."
+              actionLabel="Filtreleri Temizle"
+              onAction={clearFilters}
             />
           ) : null
         }
         ListFooterComponent={
           <>
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={AppTheme.colors.accentDeep} />
-                <Text style={styles.loadingText}>Etkinlikler hazırlanıyor...</Text>
-              </View>
-            ) : null}
-
             {loadingMore ? (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={AppTheme.colors.accentDeep} />
@@ -581,9 +584,14 @@ export default function HomeScreen() {
             ) : null}
 
             {!loading && error ? (
-              <AppCard tone="muted">
-                <Text style={styles.errorText}>{error}</Text>
-              </AppCard>
+              <ErrorStateCard
+                title="Keşif akışı alınamadı"
+                description={error}
+                actionLabel="Tekrar Dene"
+                onAction={() => {
+                  void loadInitialData(appliedFilters);
+                }}
+              />
             ) : null}
           </>
         }

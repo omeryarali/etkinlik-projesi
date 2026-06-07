@@ -8,7 +8,9 @@ import {
   AmbientBackdrop,
   AppCard,
   EmptyStateCard,
+  ErrorStateCard,
   InkButton,
+  LoadingStateCard,
   MetricTile,
   PrimaryButton,
   SecondaryButton,
@@ -357,28 +359,25 @@ export default function OrganizerEventsScreen() {
           </View>
         }
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <LoadingStateCard
+              title="Organizer panelin hazırlanıyor"
+              description="Etkinliklerin ve yönetim aksiyonların kısa süre içinde burada görünecek."
+            />
+          ) : !error ? (
             <View style={styles.emptyStack}>
               <EmptyStateCard
+                eyebrow="İlk adımı at"
                 title="Henüz organizer etkinliğin yok"
                 description="İlk etkinliğini oluşturarak organizer panelini kullanmaya başla."
-              />
-              <PrimaryButton
-                label="İlk Etkinliği Oluştur"
-                onPress={() => router.push("/create-event" as any)}
+                actionLabel="Etkinlik Oluştur"
+                onAction={() => router.push("/create-event" as any)}
               />
             </View>
           ) : null
         }
         ListFooterComponent={
           <>
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={AppTheme.colors.accentDeep} />
-                <Text style={styles.loadingText}>Etkinliklerin hazırlanıyor...</Text>
-              </View>
-            ) : null}
-
             {loadingMore ? (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={AppTheme.colors.accentDeep} />
@@ -387,9 +386,14 @@ export default function OrganizerEventsScreen() {
             ) : null}
 
             {!loading && error ? (
-              <AppCard tone="muted">
-                <Text style={styles.errorText}>{error}</Text>
-              </AppCard>
+              <ErrorStateCard
+                title="Organizer verileri alınamadı"
+                description={error}
+                actionLabel="Tekrar Dene"
+                onAction={() => {
+                  void loadEvents(1, true);
+                }}
+              />
             ) : null}
           </>
         }

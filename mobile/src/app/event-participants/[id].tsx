@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AmbientBackdrop,
   AppBackButton,
-  AppCard,
   DangerButton,
   EmptyStateCard,
+  ErrorStateCard,
+  LoadingStateCard,
   PrimaryButton,
   SectionHeading,
+  AppCard,
 } from "../../components/app-ui";
 import { AppTheme, Fonts } from "../../constants/theme";
 import { formatDateTime, getInitial } from "../../lib/format";
@@ -145,7 +147,7 @@ export default function EventParticipantsScreen() {
       return;
     }
 
-    loadParticipants(pageInfo.page + 1);
+    void loadParticipants(pageInfo.page + 1);
   }
 
   useFocusEffect(
@@ -177,28 +179,29 @@ export default function EventParticipantsScreen() {
               subtitle={
                 pageInfo
                   ? `${pageInfo.totalCount} katılımcı bu etkinlikte görünüyor`
-                  : "Yoklama ve katılım durumunu bu ekran üzerinden yönet."
+                  : "Yoklama ve katılım durumunu buradan yönet."
               }
             />
           </View>
         }
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <LoadingStateCard
+              title="Katılımcı listesi hazırlanıyor"
+              description="Bu etkinliğe katılan kullanıcılar kısa süre içinde burada görünecek."
+            />
+          ) : !error ? (
             <EmptyStateCard
-              title="Henüz katılımcı yok"
-              description="Etkinlik görünür hale geldikçe katılımcı listesi burada dolacak."
+              eyebrow="Henüz kimse eklenmedi"
+              title="Katılımcı listesi boş"
+              description="Etkinlik görünür oldukça yeni katılımcılar burada sıralanacak."
+              actionLabel="Etkinliğe Dön"
+              onAction={() => router.back()}
             />
           ) : null
         }
         ListFooterComponent={
           <>
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={AppTheme.colors.accentDeep} />
-                <Text style={styles.loadingText}>Katılımcılar yükleniyor...</Text>
-              </View>
-            ) : null}
-
             {loadingMore ? (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={AppTheme.colors.accentDeep} />
@@ -207,9 +210,14 @@ export default function EventParticipantsScreen() {
             ) : null}
 
             {!loading && error ? (
-              <AppCard tone="muted">
-                <Text style={styles.errorText}>{error}</Text>
-              </AppCard>
+              <ErrorStateCard
+                title="Katılımcılar alınamadı"
+                description={error}
+                actionLabel="Tekrar Dene"
+                onAction={() => {
+                  void loadParticipants(1, true);
+                }}
+              />
             ) : null}
           </>
         }
@@ -322,12 +330,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: AppTheme.colors.textMuted,
     fontSize: 14,
-    fontFamily: Fonts.sans,
-  },
-  errorText: {
-    color: AppTheme.colors.danger,
-    fontSize: 14,
-    lineHeight: 21,
     fontFamily: Fonts.sans,
   },
 });
