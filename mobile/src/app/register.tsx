@@ -1,31 +1,21 @@
 import { router } from "expo-router";
+import { Image } from "expo-image";
 import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+import { appDialog } from "../components/app-dialog";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+  AppCard,
+  AppInput,
+  AppScrollCanvas,
+  HeroCard,
+  PrimaryButton,
+  SecondaryButton,
+} from "../components/app-ui";
+import { AppTheme, Fonts } from "../constants/theme";
 import { apiFetch } from "../services/apiService";
 import { saveAuthData } from "../services/authStorage";
-
-type AuthResponse = {
-  userId: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  profileImageUrl: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  token: string;
-};
+import type { AuthUser } from "../types/api";
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
@@ -35,18 +25,21 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   async function handleRegister() {
-    if (
-      !fullName.trim() ||
-      !email.trim() ||
-      !phoneNumber.trim() ||
-      !password.trim()
-    ) {
-      Alert.alert("Uyarı", "Tüm alanları doldurmalısınız.");
+    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+      await appDialog.showMessage({
+        title: "Eksik bilgi",
+        message: "Tüm alanları doldurmalısın.",
+        tone: "warning",
+      });
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Uyarı", "Şifre en az 6 karakter olmalıdır.");
+      await appDialog.showMessage({
+        title: "Şifre kısa",
+        message: "Şifre en az 6 karakter olmalı.",
+        tone: "warning",
+      });
       return;
     }
 
@@ -61,169 +54,139 @@ export default function RegisterScreen() {
           phoneNumber,
           password,
         }),
-      })) as AuthResponse;
+      })) as AuthUser;
 
       await saveAuthData(data.token, data);
 
-      Alert.alert("Başarılı", "Kayıt oluşturuldu.");
+      await appDialog.showMessage({
+        title: "Hesabın hazır",
+        message: "Kayıt tamamlandı. Şimdi keşfetmeye başlayabilirsin.",
+        tone: "success",
+      });
+
       router.replace("/");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        Alert.alert("Kayıt Hatası", err.message);
-      } else {
-        Alert.alert("Kayıt Hatası", "Kayıt olurken hata oluştu.");
-      }
+      await appDialog.showMessage({
+        title: "Kayıt hatası",
+        message:
+          err instanceof Error ? err.message : "Kayıt olurken bir sorun oluştu.",
+        tone: "danger",
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Kayıt Ol</Text>
-          <Text style={styles.subtitle}>
-            Etkinlik Projesi hesabını oluştur
+    <AppScrollCanvas contentContainerStyle={styles.content}>
+      <HeroCard
+        eyebrow="BiKatıl’a Katıl"
+        title="Şehrindeki iyi planları kaçırma."
+        description="BiKatıl hesabını oluştur, etkinliklere katıl, organizer ol ve kendi topluluğunu büyüt."
+      >
+        <View style={styles.heroFooter}>
+          <Text style={styles.heroCaption}>
+            Hızlı başlangıç, sıcak topluluk ve daha canlı bir şehir akışı.
           </Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Ad Soyad</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ömer Yaralı"
-              value={fullName}
-              onChangeText={setFullName}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>E-posta</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="ornek@mail.com"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Telefon</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="05555555555"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Şifre</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="En az 6 karakter"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-
-          <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Kayıt Ol</Text>
-            )}
-          </Pressable>
-
-          <Pressable onPress={() => router.push("/login" as any)}>
-            <Text style={styles.linkText}>
-              Zaten hesabın var mı? Giriş yap
-            </Text>
-          </Pressable>
+          <Image
+            source={require("../../assets/images/logo-glow.png")}
+            style={styles.heroGlow}
+            contentFit="contain"
+          />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </HeroCard>
+
+      <AppCard style={styles.formCard}>
+        <Text style={styles.formTitle}>BiKatıl hesabını oluştur</Text>
+        <Text style={styles.formSubtitle}>
+          Birkaç bilgiyle kaydol ve sana yakın etkinliklere kolayca bi’ katıl.
+        </Text>
+
+        <View style={styles.formStack}>
+          <AppInput
+            label="Ad soyad"
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder="Ömer Yaralı"
+          />
+
+          <AppInput
+            label="E-posta"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="ornek@mail.com"
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+
+          <AppInput
+            label="Telefon"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            placeholder="05555555555"
+            keyboardType="phone-pad"
+          />
+
+          <AppInput
+            label="Şifre"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="En az 6 karakter"
+            secureTextEntry
+          />
+        </View>
+
+        <PrimaryButton label="Kaydı Tamamla" onPress={handleRegister} loading={loading} />
+        <SecondaryButton
+          label="Zaten Hesabım Var"
+          onPress={() => router.push("/login" as any)}
+        />
+      </AppCard>
+    </AppScrollCanvas>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardContainer: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
+  content: {
+    gap: 18,
   },
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#111827",
-  },
-  button: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  linkText: {
+  heroFooter: {
     marginTop: 18,
-    textAlign: "center",
-    color: "#2563EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  heroCaption: {
+    flex: 1,
+    color: AppTheme.colors.inkSoft,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Fonts.sans,
+  },
+  heroGlow: {
+    width: 88,
+    height: 88,
+    opacity: 0.9,
+  },
+  formCard: {
+    gap: 18,
+  },
+  formTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: Fonts.display,
+    fontWeight: "700",
+  },
+  formSubtitle: {
+    marginTop: 4,
+    color: AppTheme.colors.textMuted,
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 21,
+    fontFamily: Fonts.sans,
+  },
+  formStack: {
+    gap: 14,
   },
 });

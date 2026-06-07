@@ -1,17 +1,16 @@
 import { router } from "expo-router";
 import { useState } from "react";
+import { StyleSheet } from "react-native";
+
+import { appDialog } from "../components/app-dialog";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+  AppBackButton,
+  AppCard,
+  AppInput,
+  AppScrollCanvas,
+  PrimaryButton,
+  SectionHeading,
+} from "../components/app-ui";
 import { apiFetch } from "../services/apiService";
 import { getAuthToken } from "../services/authStorage";
 
@@ -34,7 +33,11 @@ export default function OrganizerApplyScreen() {
       !city.trim() ||
       !district.trim()
     ) {
-      Alert.alert("Uyarı", "Instagram hariç tüm alanları doldurmalısınız.");
+      await appDialog.showMessage({
+        title: "Eksik bilgi",
+        message: "Instagram hariç tüm alanları doldurmalısın.",
+        tone: "warning",
+      });
       return;
     }
 
@@ -64,213 +67,92 @@ export default function OrganizerApplyScreen() {
         }),
       });
 
-      Alert.alert(
-        "Başvuru Alındı",
-        "Organizatör başvurunuz alındı. Admin onayından sonra organizatör işlemlerini kullanabilirsiniz."
-      );
+      await appDialog.showMessage({
+        title: "Başvuru alındı",
+        message:
+          "Organizer başvurun alındı. Onaydan sonra kendi etkinliklerini paylaşabileceksin.",
+        tone: "success",
+      });
 
       router.back();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        Alert.alert("Başvuru Hatası", err.message);
-      } else {
-        Alert.alert("Başvuru Hatası", "Başvuru yapılırken hata oluştu.");
-      }
+      await appDialog.showMessage({
+        title: "Başvuru hatası",
+        message:
+          err instanceof Error ? err.message : "Başvuru yapılırken bir sorun oluştu.",
+        tone: "danger",
+      });
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <TouchableOpacity style={styles.backButtonSmall} onPress={() => router.back()}>
-          <Text style={styles.backButtonSmallText}>← Geri</Text>
-        </TouchableOpacity>
+    <AppScrollCanvas contentContainerStyle={styles.content}>
+      <AppBackButton onPress={() => router.back()} />
 
-        <Text style={styles.title}>Organizatör Başvurusu</Text>
-        <Text style={styles.subtitle}>
-          Etkinlik oluşturabilmek için organizatör başvurusu yap
-        </Text>
+      <SectionHeading
+        eyebrow="Organizer başvurusu"
+        title="Topluluğunu sahneye çıkar"
+        subtitle="Kendini iyi anlat, güven ver ve yerel etkinliklerini profesyonel bir şekilde yayınlamaya başla."
+      />
 
-        <View style={styles.card}>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Organizatör Adı</Text>
-            <TextInput
-              style={styles.input}
-              value={organizerName}
-              onChangeText={setOrganizerName}
-              placeholder="Örn: Ömer Organizasyon"
-            />
-          </View>
+      <AppCard style={styles.card}>
+        <AppInput
+          label="Organizer adı"
+          value={organizerName}
+          onChangeText={setOrganizerName}
+          placeholder="Örn: Ömer Organizasyon"
+        />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Organizatör Tipi</Text>
-            <TextInput
-              style={styles.input}
-              value={organizerType}
-              onChangeText={setOrganizerType}
-              placeholder="Individual / Company"
-            />
-            <Text style={styles.helpText}>
-              Bireysel için Individual, şirket/kurum için Company yazabilirsin.
-            </Text>
-          </View>
+        <AppInput
+          label="Organizer tipi"
+          value={organizerType}
+          onChangeText={setOrganizerType}
+          placeholder="Individual / Club / Venue"
+          helpText="Bireysel, kulüp veya mekan tipi gibi kısa bir tanım kullanabilirsin."
+        />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Açıklama</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Kendinizi veya organizasyonunuzu açıklayın"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
+        <AppInput
+          label="Açıklama"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Kim olduğunu ve nasıl etkinlikler düzenlediğini anlat"
+          multiline
+        />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Telefon</Text>
-            <TextInput
-              style={styles.input}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="05555555555"
-              keyboardType="phone-pad"
-            />
-          </View>
+        <AppInput
+          label="Telefon"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          placeholder="05555555555"
+          keyboardType="phone-pad"
+        />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Instagram URL</Text>
-            <TextInput
-              style={styles.input}
-              value={instagramUrl}
-              onChangeText={setInstagramUrl}
-              placeholder="https://instagram.com/..."
-              autoCapitalize="none"
-            />
-            <Text style={styles.helpText}>Zorunlu değil.</Text>
-          </View>
+        <AppInput
+          label="Instagram URL"
+          value={instagramUrl}
+          onChangeText={setInstagramUrl}
+          placeholder="https://instagram.com/..."
+          autoCapitalize="none"
+          helpText="Zorunlu değil, ama güven için faydalı."
+        />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Şehir</Text>
-            <TextInput
-              style={styles.input}
-              value={city}
-              onChangeText={setCity}
-              placeholder="Aydın"
-            />
-          </View>
+        <AppInput label="Şehir" value={city} onChangeText={setCity} placeholder="Aydın" />
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>İlçe</Text>
-            <TextInput
-              style={styles.input}
-              value={district}
-              onChangeText={setDistrict}
-              placeholder="Nazilli"
-            />
-          </View>
+        <AppInput label="İlçe" value={district} onChangeText={setDistrict} placeholder="Nazilli" />
 
-          <TouchableOpacity
-            style={[styles.saveButton, saving && styles.buttonDisabled]}
-            onPress={handleApply}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Başvuru Yap</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <PrimaryButton label="Başvuruyu Gönder" onPress={handleApply} loading={saving} />
+      </AppCard>
+    </AppScrollCanvas>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardContainer: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  container: {
-    flexGrow: 1,
-    padding: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
-  },
-  backButtonSmall: {
-    alignSelf: "flex-start",
-    marginBottom: 16,
-  },
-  backButtonSmallText: {
-    color: "#2563EB",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 6,
-    color: "#6B7280",
-    fontSize: 15,
-    marginBottom: 20,
+  content: {
+    gap: 16,
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#111827",
-  },
-  textArea: {
-    minHeight: 100,
-  },
-  helpText: {
-    marginTop: 6,
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  saveButton: {
-    marginTop: 8,
-    backgroundColor: "#2563EB",
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  buttonDisabled: {
-    opacity: 0.7,
+    gap: 14,
   },
 });

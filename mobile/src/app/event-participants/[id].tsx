@@ -1,49 +1,35 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+  AmbientBackdrop,
+  AppBackButton,
+  AppCard,
+  DangerButton,
+  EmptyStateCard,
+  PrimaryButton,
+  SectionHeading,
+} from "../../components/app-ui";
+import { AppTheme, Fonts } from "../../constants/theme";
+import { formatDateTime, getInitial } from "../../lib/format";
 import { apiFetch } from "../../services/apiService";
 import { getAuthToken } from "../../services/authStorage";
-
-type ParticipantItem = {
-  userId: number;
-  fullName: string;
-  email: string;
-  joinedAt: string;
-};
-
-type PagedResponse<T> = {
-  items: T[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-};
+import type { PagedResponse, ParticipantItem } from "../../types/api";
 
 export default function EventParticipantsScreen() {
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
 
   const [participants, setParticipants] = useState<ParticipantItem[]>([]);
-  const [pageInfo, setPageInfo] = useState<PagedResponse<ParticipantItem> | null>(
-    null
-  );
+  const [pageInfo, setPageInfo] = useState<PagedResponse<ParticipantItem> | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [actionLoadingUserId, setActionLoadingUserId] = useState<number | null>(
-    null
-  );
+  const [actionLoadingUserId, setActionLoadingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
-  async function loadParticipants(page: number, reset = false) {
+  const loadParticipants = useCallback(async (page: number, reset = false) => {
     try {
       if (reset) {
         setLoading(true);
@@ -60,14 +46,11 @@ export default function EventParticipantsScreen() {
         return;
       }
 
-      const data = (await apiFetch(
-        `/api/Event/${id}/participants?page=${page}&pageSize=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )) as PagedResponse<ParticipantItem>;
+      const data = (await apiFetch(`/api/Event/${id}/participants?page=${page}&pageSize=20`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })) as PagedResponse<ParticipantItem>;
 
       if (reset) {
         setParticipants(data.items || []);
@@ -86,7 +69,7 @@ export default function EventParticipantsScreen() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }
+  }, [id]);
 
   async function markAttended(userId: number) {
     await runParticipantAction(
@@ -111,21 +94,17 @@ export default function EventParticipantsScreen() {
   ) {
     try {
       const confirmed = await new Promise<boolean>((resolve) => {
-        Alert.alert(
-          "Onay",
-          "Bu katılımcının durumunu güncellemek istediğinize emin misiniz?",
-          [
-            {
-              text: "Vazgeç",
-              style: "cancel",
-              onPress: () => resolve(false),
-            },
-            {
-              text: "Onayla",
-              onPress: () => resolve(true),
-            },
-          ]
-        );
+        Alert.alert("Onay", "Katılımcı durumunu güncellemek istediğine emin misin?", [
+          {
+            text: "Vazgeç",
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: "Onayla",
+            onPress: () => resolve(true),
+          },
+        ]);
       });
 
       if (!confirmed) {
@@ -149,7 +128,6 @@ export default function EventParticipantsScreen() {
       });
 
       Alert.alert("Başarılı", successMessage);
-
       await loadParticipants(1, true);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -170,260 +148,186 @@ export default function EventParticipantsScreen() {
     loadParticipants(pageInfo.page + 1);
   }
 
-  function formatDate(dateValue: string) {
-    if (!dateValue) return "-";
-
-    return new Date(dateValue).toLocaleString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
   useFocusEffect(
     useCallback(() => {
-      loadParticipants(1, true);
-    }, [id])
+      void loadParticipants(1, true);
+    }, [loadParticipants])
   );
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>← Geri</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Katılımcılar</Text>
-
-      {pageInfo && (
-        <Text style={styles.subtitle}>{pageInfo.totalCount} katılımcı</Text>
-      )}
-
-      {loading && (
-        <View style={styles.centerBox}>
-          <ActivityIndicator />
-          <Text style={styles.infoText}>Katılımcılar yükleniyor...</Text>
-        </View>
-      )}
-
-      {!loading && error ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
-
-      {!loading && !error && (
-        <FlatList
-          data={participants}
-          keyExtractor={(item) => item.userId.toString()}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.4}
-          ListEmptyComponent={
-            <Text style={styles.infoText}>
-              Bu etkinlikte henüz katılımcı bulunmuyor.
-            </Text>
-          }
-          ListFooterComponent={
-            loadingMore ? (
-              <View style={styles.footerLoading}>
-                <ActivityIndicator />
-                <Text style={styles.infoText}>Daha fazla yükleniyor...</Text>
+    <View style={styles.screen}>
+      <AmbientBackdrop />
+      <FlatList
+        data={participants}
+        keyExtractor={(item) => item.userId.toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 28,
+          },
+        ]}
+        ListHeaderComponent={
+          <View style={styles.headerStack}>
+            <AppBackButton onPress={() => router.back()} />
+            <SectionHeading
+              eyebrow="Katılımcı yönetimi"
+              title="Katılımcılar"
+              subtitle={
+                pageInfo
+                  ? `${pageInfo.totalCount} katılımcı bu etkinlikte görünüyor`
+                  : "Yoklama ve katılım durumunu bu ekran üzerinden yönet."
+              }
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <EmptyStateCard
+              title="Henüz katılımcı yok"
+              description="Etkinlik görünür hale geldikçe katılımcı listesi burada dolacak."
+            />
+          ) : null
+        }
+        ListFooterComponent={
+          <>
+            {loading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={AppTheme.colors.accentDeep} />
+                <Text style={styles.loadingText}>Katılımcılar yükleniyor...</Text>
               </View>
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.topRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {item.fullName?.charAt(0)?.toUpperCase() || "U"}
-                  </Text>
-                </View>
+            ) : null}
 
-                <View style={styles.cardContent}>
-                  <Text style={styles.name}>{item.fullName}</Text>
-                  <Text style={styles.email}>{item.email}</Text>
-                  <Text style={styles.joinedAt}>
-                    Katılım: {formatDate(item.joinedAt)}
-                  </Text>
-                </View>
+            {loadingMore ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={AppTheme.colors.accentDeep} />
+                <Text style={styles.loadingText}>Daha fazla kayıt geliyor...</Text>
+              </View>
+            ) : null}
+
+            {!loading && error ? (
+              <AppCard tone="muted">
+                <Text style={styles.errorText}>{error}</Text>
+              </AppCard>
+            ) : null}
+          </>
+        }
+        renderItem={({ item }) => (
+          <AppCard style={styles.participantCard}>
+            <View style={styles.topRow}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{getInitial(item.fullName)}</Text>
               </View>
 
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.attendedButton,
-                    actionLoadingUserId === item.userId && styles.buttonDisabled,
-                  ]}
-                  onPress={() => markAttended(item.userId)}
-                  disabled={actionLoadingUserId === item.userId}
-                >
-                  {actionLoadingUserId === item.userId ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.attendedButtonText}>Geldi</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.noShowButton,
-                    actionLoadingUserId === item.userId && styles.buttonDisabled,
-                  ]}
-                  onPress={() => markNoShow(item.userId)}
-                  disabled={actionLoadingUserId === item.userId}
-                >
-                  <Text style={styles.noShowButtonText}>Gelmedi</Text>
-                </TouchableOpacity>
+              <View style={styles.metaBlock}>
+                <Text style={styles.name}>{item.fullName}</Text>
+                <Text style={styles.email}>{item.email}</Text>
+                <Text style={styles.joinedAt}>
+                  Katılım: {formatDateTime(item.joinedAt)}
+                </Text>
               </View>
             </View>
-          )}
-        />
-      )}
+
+            <View style={styles.actionRow}>
+              <PrimaryButton
+                label="Geldi"
+                onPress={() => markAttended(item.userId)}
+                loading={actionLoadingUserId === item.userId}
+                style={styles.actionButton}
+              />
+              <DangerButton
+                label="Gelmedi"
+                onPress={() => markNoShow(item.userId)}
+                loading={actionLoadingUserId === item.userId}
+                style={styles.actionButton}
+              />
+            </View>
+          </AppCard>
+        )}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.35}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
-    padding: 24,
-    paddingTop: 56,
+    backgroundColor: AppTheme.colors.background,
   },
-  backButton: {
-    alignSelf: "flex-start",
-    marginBottom: 16,
+  content: {
+    paddingHorizontal: 20,
+    gap: 14,
   },
-  backButtonText: {
-    color: "#2563EB",
-    fontSize: 15,
-    fontWeight: "700",
+  headerStack: {
+    gap: 16,
+    marginBottom: 6,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 6,
-    marginBottom: 18,
-    color: "#6B7280",
-    fontSize: 14,
-  },
-  centerBox: {
-    marginTop: 24,
-    alignItems: "center",
-    gap: 8,
-  },
-  infoText: {
-    color: "#6B7280",
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 24,
-  },
-  errorBox: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 20,
-  },
-  errorText: {
-    color: "#991B1B",
-    fontSize: 14,
-  },
-  list: {
-    flex: 1,
-    marginTop: 18,
-  },
-  listContent: {
-    gap: 12,
-    paddingBottom: 24,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+  participantCard: {
+    gap: 14,
   },
   topRow: {
     flexDirection: "row",
+    gap: 14,
     alignItems: "center",
-    gap: 12,
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "#2563EB",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: AppTheme.colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "800",
+    color: AppTheme.colors.white,
+    fontSize: 22,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
   },
-  cardContent: {
+  metaBlock: {
     flex: 1,
+    gap: 3,
   },
   name: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#111827",
+    color: AppTheme.colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
   },
   email: {
-    marginTop: 3,
+    color: AppTheme.colors.textMuted,
     fontSize: 13,
-    color: "#6B7280",
+    fontFamily: Fonts.sans,
   },
   joinedAt: {
-    marginTop: 5,
+    color: AppTheme.colors.inkSoft,
     fontSize: 12,
-    color: "#4B5563",
-    fontWeight: "600",
+    fontFamily: Fonts.sans,
   },
   actionRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 14,
   },
-  attendedButton: {
+  actionButton: {
     flex: 1,
-    backgroundColor: "#16A34A",
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: "center",
   },
-  attendedButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  noShowButton: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DC2626",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: "center",
-  },
-  noShowButtonText: {
-    color: "#DC2626",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  footerLoading: {
-    paddingVertical: 16,
+  loadingBox: {
     alignItems: "center",
     gap: 8,
+    paddingVertical: 12,
+  },
+  loadingText: {
+    color: AppTheme.colors.textMuted,
+    fontSize: 14,
+    fontFamily: Fonts.sans,
+  },
+  errorText: {
+    color: AppTheme.colors.danger,
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: Fonts.sans,
   },
 });

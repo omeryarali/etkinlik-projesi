@@ -1,30 +1,21 @@
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
 import { router } from "expo-router";
+import { Image } from "expo-image";
+import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+import { appDialog } from "../components/app-dialog";
+import {
+  AppCard,
+  AppInput,
+  AppScrollCanvas,
+  HeroCard,
+  InkButton,
+  SecondaryButton,
+} from "../components/app-ui";
+import { AppTheme, Fonts } from "../constants/theme";
 import { apiFetch } from "../services/apiService";
 import { saveAuthData } from "../services/authStorage";
-
-type AuthResponse = {
-  userId: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  profileImageUrl: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  token: string;
-};
+import type { AuthUser } from "../types/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -33,154 +24,147 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Uyarı", "E-posta ve şifre alanları zorunludur.");
+      await appDialog.showMessage({
+        title: "Eksik bilgi",
+        message: "E-posta ve şifre alanlarını doldurmalısın.",
+        tone: "warning",
+      });
       return;
     }
 
     try {
       setLoading(true);
 
-      const data = await apiFetch("/api/Auth/login", {
+      const data = (await apiFetch("/api/Auth/login", {
         method: "POST",
         body: JSON.stringify({
           email,
           password,
         }),
-      }) as AuthResponse;
+      })) as AuthUser;
 
       await saveAuthData(data.token, data);
 
-      Alert.alert("Başarılı", "Giriş yapıldı.");
+      await appDialog.showMessage({
+        title: "Hoş geldin",
+        message: "Hesabına giriş yapıldı. Şimdi keşif akışı seni bekliyor.",
+        tone: "success",
+      });
+
       router.replace("/");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        Alert.alert("Giriş Hatası", err.message);
-      } else {
-        Alert.alert("Giriş Hatası", "Giriş yapılırken hata oluştu.");
-      }
+      await appDialog.showMessage({
+        title: "Giriş hatası",
+        message:
+          err instanceof Error ? err.message : "Giriş yapılırken bir sorun oluştu.",
+        tone: "danger",
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>Giriş Yap</Text>
-        <Text style={styles.subtitle}>Etkinlik Projesi hesabına giriş yap</Text>
+    <AppScrollCanvas contentContainerStyle={styles.content}>
+      <HeroCard
+        eyebrow="BiKatıl"
+        title="Şehrin ritmine BiKatıl."
+        description="Yakındaki turnuvaları, buluşmaları ve sosyal planları BiKatıl’ın seçkin akışında keşfet."
+      >
+        <View style={styles.heroFooter}>
+          <View style={styles.heroTextColumn}>
+            <Text style={styles.heroCaption}>
+              Yerel keşif, güçlü topluluk ve tek dokunuşla katılım deneyimi.
+            </Text>
+          </View>
+          <Image
+            source={require("../../assets/images/logo-glow.png")}
+            style={styles.heroGlow}
+            contentFit="contain"
+          />
+        </View>
+      </HeroCard>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>E-posta</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="ornek@mail.com"
+      <AppCard style={styles.formCard}>
+        <Text style={styles.formTitle}>BiKatıl’a tekrar hoş geldin</Text>
+        <Text style={styles.formSubtitle}>
+          Hesabınla giriş yap, sana uygun akışı aç ve şehirde neler olduğuna hemen bak.
+        </Text>
+
+        <View style={styles.formStack}>
+          <AppInput
+            label="E-posta"
             value={email}
             onChangeText={setEmail}
+            placeholder="ornek@mail.com"
             autoCapitalize="none"
             keyboardType="email-address"
           />
-        </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Şifre</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Şifreniz"
+          <AppInput
+            label="Şifre"
             value={password}
             onChangeText={setPassword}
+            placeholder="Şifren"
             secureTextEntry
           />
         </View>
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>Giriş Yap</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={() => router.push("/register" as any)}>
-          <Text style={styles.linkText}>
-            Hesabın yok mu? Kayıt ol
-          </Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+        <InkButton label="Giriş Yap" onPress={handleLogin} loading={loading} />
+        <SecondaryButton
+          label="Hesap Oluştur"
+          onPress={() => router.push("/register" as any)}
+        />
+      </AppCard>
+    </AppScrollCanvas>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
+  content: {
+    gap: 18,
     justifyContent: "center",
-    padding: 24,
+    flexGrow: 1,
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#111827",
-  },
-  button: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  linkText: {
+  heroFooter: {
     marginTop: 18,
-    textAlign: "center",
-    color: "#2563EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  heroTextColumn: {
+    flex: 1,
+  },
+  heroCaption: {
+    color: AppTheme.colors.inkSoft,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Fonts.sans,
+  },
+  heroGlow: {
+    width: 92,
+    height: 92,
+    opacity: 0.9,
+  },
+  formCard: {
+    gap: 18,
+  },
+  formTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: Fonts.display,
+    fontWeight: "700",
+  },
+  formSubtitle: {
+    marginTop: 4,
+    color: AppTheme.colors.textMuted,
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 21,
+    fontFamily: Fonts.sans,
+  },
+  formStack: {
+    gap: 14,
   },
 });

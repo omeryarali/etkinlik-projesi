@@ -1,69 +1,74 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import {
+  AmbientBackdrop,
+  AppBackButton,
+  AppCard,
+  DetailRow,
+  MetricTile,
+  PrimaryButton,
+  ProgressTrack,
+  SecondaryButton,
+  SectionHeading,
+} from "../../components/app-ui";
+import { AppTheme, Fonts } from "../../constants/theme";
+import {
+  formatDateTime,
+  formatLocation,
+  formatPrice,
+  percentage,
+} from "../../lib/format";
 import { apiFetch } from "../../services/apiService";
 import { getAuthToken } from "../../services/authStorage";
-
-type EventDetail = {
-  id: number;
-  organizerProfileId: number;
-  organizerName: string;
-  eventCategoryId: number;
-  categoryName: string;
-  title: string;
-  description: string;
-  startDate: string;
-  endDate?: string | null;
-  city: string;
-  district: string;
-  locationName: string;
-  address: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  capacity: number;
-  participantCount: number;
-  isPaid: boolean;
-  price?: number | null;
-  coverImageUrl: string;
-  rules: string;
-  status: string;
-  createdAt: string;
-  approvedAt?: string | null;
-};
-
-type PagedResponse<T> = {
-  items: T[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-};
+import type { EventSummary, PagedResponse } from "../../types/api";
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
 
-  const [event, setEvent] = useState<EventDetail | null>(null);
+  const [event, setEvent] = useState<EventSummary | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadEventDetail() {
+  const checkJoinedStatus = useCallback(async (eventId: number) => {
+    try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        setHasJoined(false);
+        return;
+      }
+
+      const data = (await apiFetch("/api/Event/my-joined-events?page=1&pageSize=100", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })) as PagedResponse<EventSummary>;
+
+      setHasJoined((data.items || []).some((item) => item.id === eventId));
+    } catch {
+      setHasJoined(false);
+    }
+  }, []);
+
+  const loadEventDetail = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const data = (await apiFetch(`/api/Event/${id}`)) as EventDetail;
+      const data = (await apiFetch(`/api/Event/${id}`)) as EventSummary;
       setEvent(data);
 
       await checkJoinedStatus(data.id);
@@ -76,53 +81,23 @@ export default function EventDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function checkJoinedStatus(eventId: number) {
-    try {
-      const token = await getAuthToken();
-
-      if (!token) {
-        setHasJoined(false);
-        return;
-      }
-
-      const data = (await apiFetch(
-        "/api/Event/my-joined-events?page=1&pageSize=100",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )) as PagedResponse<EventDetail>;
-
-      const joined = (data.items || []).some((item) => item.id === eventId);
-      setHasJoined(joined);
-    } catch {
-      setHasJoined(false);
-    }
-  }
+  }, [checkJoinedStatus, id]);
 
   async function handleJoinEvent() {
     try {
       const token = await getAuthToken();
 
       if (!token) {
-        Alert.alert(
-          "Giriş Gerekli",
-          "Etkinliğe katılmak için giriş yapmalısınız.",
-          [
-            {
-              text: "Vazgeç",
-              style: "cancel",
-            },
-            {
-              text: "Giriş Yap",
-              onPress: () => router.push("/login" as any),
-            },
-          ]
-        );
-
+        Alert.alert("Giriş Gerekli", "Etkinliğe katılmak için önce giriş yapmalısın.", [
+          {
+            text: "Vazgeç",
+            style: "cancel",
+          },
+          {
+            text: "Giriş Yap",
+            onPress: () => router.push("/login" as any),
+          },
+        ]);
         return;
       }
 
@@ -135,15 +110,14 @@ export default function EventDetailScreen() {
         },
       });
 
-      Alert.alert("Başarılı", "Etkinliğe katıldınız.");
-
+      Alert.alert("Başarılı", "Etkinliğe katıldın.");
       setHasJoined(true);
       await loadEventDetail();
     } catch (err: unknown) {
       if (err instanceof Error) {
         Alert.alert("Katılım Hatası", err.message);
       } else {
-        Alert.alert("Katılım Hatası", "Etkinliğe katılırken hata oluştu.");
+        Alert.alert("Katılım Hatası", "Etkinliğe katılırken bir sorun oluştu.");
       }
     } finally {
       setActionLoading(false);
@@ -157,7 +131,7 @@ export default function EventDetailScreen() {
       if (!token) {
         Alert.alert(
           "Giriş Gerekli",
-          "Etkinlikten ayrılmak için giriş yapmalısınız.",
+          "Etkinlikten ayrılmak için önce giriş yapmalısın.",
           [
             {
               text: "Vazgeç",
@@ -169,14 +143,13 @@ export default function EventDetailScreen() {
             },
           ]
         );
-
         return;
       }
 
       const confirmed = await new Promise<boolean>((resolve) => {
         Alert.alert(
           "Etkinlikten Ayrıl",
-          "Bu etkinlikten ayrılmak istediğinize emin misiniz?",
+          "Bu planı listenden çıkarmak istediğine emin misin?",
           [
             {
               text: "Vazgeç",
@@ -205,308 +178,396 @@ export default function EventDetailScreen() {
         },
       });
 
-      Alert.alert("Başarılı", "Etkinlikten ayrıldınız.");
-
+      Alert.alert("Tamam", "Etkinlikten ayrıldın.");
       setHasJoined(false);
       await loadEventDetail();
     } catch (err: unknown) {
       if (err instanceof Error) {
         Alert.alert("Ayrılma Hatası", err.message);
       } else {
-        Alert.alert("Ayrılma Hatası", "Etkinlikten ayrılırken hata oluştu.");
+        Alert.alert("Ayrılma Hatası", "Etkinlikten ayrılırken bir sorun oluştu.");
       }
     } finally {
       setActionLoading(false);
     }
   }
 
-  function formatDate(dateValue?: string | null) {
-    if (!dateValue) return "-";
-
-    return new Date(dateValue).toLocaleString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
   function isFull() {
-    if (!event) return false;
+    if (!event) {
+      return false;
+    }
 
     return event.participantCount >= event.capacity;
   }
 
-  useEffect(() => {
-    loadEventDetail();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadEventDetail();
+    }, [loadEventDetail])
+  );
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator />
-        <Text style={styles.infoText}>Etkinlik detayı yükleniyor...</Text>
+      <View style={styles.screen}>
+        <AmbientBackdrop />
+        <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
+          <ActivityIndicator color={AppTheme.colors.accentDeep} />
+          <Text style={styles.infoText}>Etkinlik detayı hazırlanıyor...</Text>
+        </View>
       </View>
     );
   }
 
   if (error || !event) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || "Etkinlik bulunamadı."}</Text>
-
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Geri Dön</Text>
-        </TouchableOpacity>
+      <View style={styles.screen}>
+        <AmbientBackdrop />
+        <View style={[styles.centered, { paddingTop: insets.top + 20 }]}>
+          <Text style={styles.errorText}>{error || "Etkinlik bulunamadı."}</Text>
+          <SecondaryButton label="Geri Dön" onPress={() => router.back()} />
+        </View>
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.backButtonSmall} onPress={() => router.back()}>
-        <Text style={styles.backButtonSmallText}>← Geri</Text>
-      </TouchableOpacity>
+  const occupancyRate = percentage(event.participantCount, event.capacity);
+  const seatsLeft = Math.max(event.capacity - event.participantCount, 0);
+  const availabilityText = getAvailabilityText(seatsLeft, occupancyRate, hasJoined);
+  const experienceMode = event.isPaid ? "Premium deneyim" : "Topluluk buluşması";
 
-      <View style={styles.headerCard}>
-        <View style={styles.topRow}>
-          <Text style={styles.categoryBadge}>{event.categoryName}</Text>
-          <Text style={styles.priceText}>
-            {event.isPaid ? `${event.price ?? 0} TL` : "Ücretsiz"}
+  return (
+    <View style={styles.screen}>
+      <AmbientBackdrop />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 132,
+          },
+        ]}
+      >
+        <AppBackButton onPress={() => router.back()} />
+
+        <AppCard tone="ink" style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>{event.categoryName}</Text>
+            </View>
+            <View style={styles.heroPriceBadge}>
+              <Text style={styles.heroPriceText}>
+                {formatPrice(event.isPaid, event.price)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.heroEyebrow}>{experienceMode}</Text>
+          <Text style={styles.heroTitle}>{event.title}</Text>
+          <Text style={styles.heroDescription}>
+            {event.description || "Bu etkinlik için açıklama yakında eklenecek."}
           </Text>
+
+          <View style={styles.heroMetrics}>
+            <MetricTile
+              label="Konum"
+              value={event.city || "Şehir"}
+              helper={event.district || event.locationName || "Buluşma noktası"}
+              tone="ink"
+            />
+            <MetricTile
+              label="Katılım"
+              value={`${event.participantCount}/${event.capacity}`}
+              helper={availabilityText}
+              tone="ink"
+            />
+          </View>
+
+          <View style={styles.progressBlock}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>Doluluk oranı</Text>
+              <Text style={styles.progressValue}>%{occupancyRate}</Text>
+            </View>
+            <ProgressTrack value={event.participantCount} total={event.capacity} />
+          </View>
+        </AppCard>
+
+        <SectionHeading
+          eyebrow="Akış özeti"
+          title="Etkinlik sahnesi"
+          subtitle="Tarih, mekan, katılım ve kurallar tek bir akışta toplandı."
+        />
+
+        <View style={styles.summaryRow}>
+          <MetricTile
+            label="Başlangıç"
+            value={formatDateTime(event.startDate)}
+            helper="Planlanan ilk buluşma"
+          />
+          <MetricTile
+            label="Kalan yer"
+            value={`${seatsLeft}`}
+            helper={seatsLeft > 0 ? "Açık kontenjan" : "Yeni yer yok"}
+          />
         </View>
 
-        <Text style={styles.title}>{event.title}</Text>
-        <Text style={styles.description}>{event.description}</Text>
-      </View>
+        <AppCard>
+          <Text style={styles.cardTitle}>Zaman</Text>
+          <DetailRow label="Başlangıç" value={formatDateTime(event.startDate)} />
+          <DetailRow label="Bitiş" value={formatDateTime(event.endDate)} />
+        </AppCard>
 
-      <InfoCard title="Tarih">
-        <InfoRow label="Başlangıç" value={formatDate(event.startDate)} />
-        <InfoRow label="Bitiş" value={formatDate(event.endDate)} />
-      </InfoCard>
+        <AppCard>
+          <Text style={styles.cardTitle}>Mekan bilgisi</Text>
+          <DetailRow label="Mekan" value={event.locationName} />
+          <DetailRow label="Adres" value={event.address || "-"} />
+          <DetailRow label="Şehir / ilçe" value={formatLocation(event.city, event.district)} />
+        </AppCard>
 
-      <InfoCard title="Konum">
-        <InfoRow label="Şehir / İlçe" value={`${event.city} / ${event.district}`} />
-        <InfoRow label="Mekan" value={event.locationName} />
-        <InfoRow label="Adres" value={event.address} />
-      </InfoCard>
+        <AppCard tone="muted">
+          <Text style={styles.cardTitle}>Katılım ve organizer</Text>
+          <DetailRow label="Organizer" value={event.organizerName} />
+          <DetailRow
+            label="Katılım durumu"
+            value={`${event.participantCount} / ${event.capacity}`}
+          />
+          <DetailRow label="Deneyim tipi" value={experienceMode} />
+        </AppCard>
 
-      <InfoCard title="Katılım">
-        <InfoRow
-          label="Kontenjan"
-          value={`${event.participantCount} / ${event.capacity}`}
-        />
-        <InfoRow label="Organizatör" value={event.organizerName} />
-      </InfoCard>
+        <AppCard>
+          <Text style={styles.cardTitle}>Kurallar</Text>
+          <Text style={styles.rulesText}>
+            {event.rules || "Bu etkinlik için özel kural belirtilmedi."}
+          </Text>
+        </AppCard>
+      </ScrollView>
 
-      <InfoCard title="Kurallar">
-        <Text style={styles.rulesText}>{event.rules || "Kural belirtilmemiş."}</Text>
-      </InfoCard>
-
-      {hasJoined ? (
-        <TouchableOpacity
-          style={[styles.leaveButton, actionLoading && styles.buttonDisabled]}
-          onPress={handleLeaveEvent}
-          disabled={actionLoading}
-        >
-          {actionLoading ? (
-            <ActivityIndicator color="#DC2626" />
-          ) : (
-            <Text style={styles.leaveButtonText}>Etkinlikten Ayrıl</Text>
-          )}
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          style={[
-            styles.joinButton,
-            (actionLoading || isFull()) && styles.buttonDisabled,
-          ]}
-          onPress={handleJoinEvent}
-          disabled={actionLoading || isFull()}
-        >
-          {actionLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.joinButtonText}>
-              {isFull() ? "Kontenjan Doldu" : "Etkinliğe Katıl"}
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={styles.bottomBarContent}>
+          <View style={styles.bottomMeta}>
+            <Text style={styles.bottomMetaEyebrow}>
+              {hasJoined ? "Planına eklendi" : availabilityText}
             </Text>
-          )}
-        </TouchableOpacity>
-      )}
-    </ScrollView>
-  );
-}
+            <Text style={styles.bottomMetaTitle}>
+              {formatLocation(event.city, event.district)}
+            </Text>
+          </View>
 
-function InfoCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={styles.infoCard}>
-      <Text style={styles.infoCardTitle}>{title}</Text>
-      {children}
+          <View style={styles.bottomAction}>
+            {hasJoined ? (
+              <SecondaryButton
+                label="Etkinlikten Ayrıl"
+                onPress={handleLeaveEvent}
+                loading={actionLoading}
+              />
+            ) : (
+              <PrimaryButton
+                label={isFull() ? "Kontenjan Dolu" : "Etkinliğe Katıl"}
+                onPress={handleJoinEvent}
+                loading={actionLoading}
+                disabled={isFull()}
+              />
+            )}
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || "-"}</Text>
-    </View>
-  );
+function getAvailabilityText(
+  seatsLeft: number,
+  occupancyRate: number,
+  hasJoined: boolean
+) {
+  if (hasJoined) {
+    return "Katılımın onaylı";
+  }
+
+  if (seatsLeft <= 0) {
+    return "Kontenjan dolu";
+  }
+
+  if (occupancyRate >= 85) {
+    return `${seatsLeft} kişilik yer kaldı`;
+  }
+
+  if (occupancyRate >= 60) {
+    return "İlgi yüksek";
+  }
+
+  return "Rahat katılım";
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: AppTheme.colors.background,
   },
   content: {
-    padding: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    gap: 16,
   },
-  centerContainer: {
+  centered: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    paddingHorizontal: 20,
     gap: 12,
   },
   infoText: {
-    color: "#6B7280",
+    color: AppTheme.colors.textMuted,
     fontSize: 14,
+    fontFamily: Fonts.sans,
   },
   errorText: {
-    color: "#991B1B",
-    fontSize: 15,
+    color: AppTheme.colors.danger,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: "center",
+    fontFamily: Fonts.sans,
   },
-  backButton: {
-    marginTop: 10,
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+  heroCard: {
+    gap: 16,
   },
-  backButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-  backButtonSmall: {
-    alignSelf: "flex-start",
-    marginBottom: 16,
-  },
-  backButtonSmallText: {
-    color: "#2563EB",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  headerCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 14,
-  },
-  topRow: {
+  heroTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
+    alignItems: "center",
+    gap: 10,
   },
-  categoryBadge: {
-    backgroundColor: "#DBEAFE",
-    color: "#1D4ED8",
-    fontSize: 12,
-    fontWeight: "700",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  priceText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#16A34A",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  description: {
-    marginTop: 10,
-    fontSize: 15,
-    color: "#6B7280",
-    lineHeight: 22,
-  },
-  infoCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+  heroBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: AppTheme.radii.pill,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 14,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
-  infoCardTitle: {
-    fontSize: 17,
+  heroBadgeText: {
+    color: AppTheme.colors.white,
+    fontSize: 12,
     fontWeight: "800",
-    color: "#111827",
-    marginBottom: 12,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
   },
-  infoRow: {
-    marginTop: 8,
+  heroPriceBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: AppTheme.radii.pill,
+    backgroundColor: "rgba(214, 106, 74, 0.2)",
   },
-  infoLabel: {
+  heroPriceText: {
+    color: AppTheme.colors.accentContrast,
+    fontSize: 12,
+    fontWeight: "800",
+    fontFamily: Fonts.rounded,
+  },
+  heroEyebrow: {
+    color: "rgba(255, 246, 242, 0.72)",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
+  },
+  heroTitle: {
+    color: AppTheme.colors.white,
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
+  },
+  heroDescription: {
+    color: "rgba(255, 246, 242, 0.78)",
+    fontSize: 15,
+    lineHeight: 23,
+    fontFamily: Fonts.sans,
+  },
+  heroMetrics: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  progressBlock: {
+    gap: 10,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  progressLabel: {
+    color: "rgba(255, 246, 242, 0.7)",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
+  },
+  progressValue: {
+    color: AppTheme.colors.white,
     fontSize: 13,
     fontWeight: "700",
-    color: "#374151",
+    fontFamily: Fonts.rounded,
   },
-  infoValue: {
-    marginTop: 2,
-    fontSize: 14,
-    color: "#6B7280",
+  summaryRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  cardTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
+    marginBottom: 6,
   },
   rulesText: {
+    color: AppTheme.colors.textMuted,
     fontSize: 14,
-    color: "#6B7280",
-    lineHeight: 21,
+    lineHeight: 22,
+    fontFamily: Fonts.sans,
   },
-  joinButton: {
-    marginTop: 6,
-    backgroundColor: "#2563EB",
-    borderRadius: 14,
-    paddingVertical: 15,
+  bottomBar: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 0,
+    paddingTop: 12,
+    backgroundColor: "rgba(246, 239, 230, 0.96)",
+  },
+  bottomBarContent: {
+    flexDirection: "row",
     alignItems: "center",
-  },
-  joinButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  leaveButton: {
-    marginTop: 6,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DC2626",
+    gap: 12,
+    borderRadius: AppTheme.radii.lg,
     borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: "center",
+    borderColor: "rgba(168, 71, 52, 0.1)",
+    backgroundColor: "rgba(255, 249, 242, 0.92)",
+    padding: 12,
   },
-  leaveButtonText: {
-    color: "#DC2626",
-    fontSize: 16,
+  bottomMeta: {
+    flex: 1,
+    gap: 4,
+  },
+  bottomMetaEyebrow: {
+    color: AppTheme.colors.accentDeep,
+    fontSize: 12,
     fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    fontFamily: Fonts.rounded,
   },
-  buttonDisabled: {
-    opacity: 0.65,
+  bottomMetaTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
+  },
+  bottomAction: {
+    minWidth: 170,
+    flexShrink: 0,
   },
 });

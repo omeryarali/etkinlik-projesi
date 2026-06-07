@@ -1,180 +1,157 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import {
+  AppBackButton,
+  AppCard,
+  AppScrollCanvas,
+  ChoicePill,
+  InkButton,
+  MetricTile,
+  PrimaryButton,
+  SectionHeading,
+} from "../components/app-ui";
+import { AppTheme, Fonts } from "../constants/theme";
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
+const discoveryGroups = [
+  {
+    title: "Sosyal Buluşmalar",
+    description: "Kahve sohbetleri, masa oyunları ve topluluk akşamları için sıcak bir akış.",
+    tags: ["Akşam planı", "Yeni insanlarla tanış", "Rahat tempo"],
+    tone: "accent" as const,
+  },
+  {
+    title: "Turnuvalar",
+    description: "Rekabet duygusu güçlü, katılımı net ve enerjisi yüksek etkinlikler.",
+    tags: ["Tavla", "Satranç", "Spor"],
+    tone: "default" as const,
+  },
+  {
+    title: "Mahalle Keşfi",
+    description: "Şehrin farklı köşelerinde küçük ama karakterli organizasyonlar.",
+    tags: ["Yerel mekanlar", "Yakın çevre", "Hafta sonu"],
+    tone: "muted" as const,
+  },
+];
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
-
+export default function ExploreScreen() {
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
+    <AppScrollCanvas contentContainerStyle={styles.content}>
+      <AppBackButton onPress={() => router.back()} />
 
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
+      <SectionHeading
+        eyebrow="BiKatıl Editörü"
+        title="İlham veren akışlar"
+        subtitle="BiKatıl’ın şehir rehberi ruhunu ve daha rafine keşif hissini aynı ekranda buluşturan katman."
+      />
 
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+      <AppCard tone="ink" style={styles.heroCard}>
+        <Text style={styles.heroEyebrow}>BiKatıl Selects</Text>
+        <Text style={styles.heroTitle}>Bugünün havasına göre akış seç</Text>
+        <Text style={styles.heroText}>
+          Bu alan, gelecekte BiKatıl’ın gerçek kategori verileri ve editoryal seçimleriyle daha da zenginleşecek.
+        </Text>
 
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
+        <View style={styles.heroMetrics}>
+          <MetricTile label="Ritim" value="Yavaş" helper="Sakin ve sosyal planlar" tone="ink" />
+          <MetricTile label="Enerji" value="Canlı" helper="Yüksek etkileşimli akış" tone="ink" />
+        </View>
 
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+        <PrimaryButton label="BiKatıl akışına dön" onPress={() => router.push("/" as any)} />
+      </AppCard>
 
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+      {discoveryGroups.map((group) => (
+        <AppCard key={group.title} tone={group.tone} style={styles.groupCard}>
+          <Text style={styles.groupTitle}>{group.title}</Text>
+          <Text style={styles.groupDescription}>{group.description}</Text>
 
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+          <View style={styles.tagRow}>
+            {group.tags.map((tag) => (
+              <ChoicePill key={tag} label={tag} active />
+            ))}
+          </View>
+        </AppCard>
+      ))}
+
+      <AppCard style={styles.noteCard}>
+        <Text style={styles.noteTitle}>Bir sonraki katman</Text>
+        <Text style={styles.noteText}>
+          Burayı ilerleyen turda gerçek şehir seçkileri, kişisel öneriler ve BiKatıl’a özel editoryal bloklarla besleyebiliriz.
+        </Text>
+      </AppCard>
+
+      <InkButton label="BiKatıl Ana Akışı" onPress={() => router.push("/" as any)} />
+    </AppScrollCanvas>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
+  content: {
+    gap: 16,
   },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  heroCard: {
+    gap: 14,
   },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
+  heroEyebrow: {
+    color: "rgba(255, 246, 242, 0.72)",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: Fonts.rounded,
   },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
+  heroTitle: {
+    color: AppTheme.colors.white,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
   },
-  centerText: {
-    textAlign: 'center',
+  heroText: {
+    color: "rgba(255, 246, 242, 0.78)",
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: Fonts.sans,
   },
-  pressed: {
-    opacity: 0.7,
+  heroMetrics: {
+    flexDirection: "row",
+    gap: 10,
   },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
+  groupCard: {
+    gap: 12,
   },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
+  groupTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
   },
-  collapsibleContent: {
-    alignItems: 'center',
+  groupDescription: {
+    color: AppTheme.colors.inkSoft,
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: Fonts.sans,
   },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+  noteCard: {
+    gap: 8,
+  },
+  noteTitle: {
+    color: AppTheme.colors.text,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "700",
+    fontFamily: Fonts.display,
+  },
+  noteText: {
+    color: AppTheme.colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: Fonts.sans,
   },
 });
