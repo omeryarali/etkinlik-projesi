@@ -15,7 +15,7 @@ import {
 import { AppTheme, Fonts } from "../constants/theme";
 import { apiFetch } from "../services/apiService";
 import { saveAuthData } from "../services/authStorage";
-import type { AuthUser } from "../types/api";
+import type { AuthResponse } from "../types/api";
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
@@ -28,16 +28,16 @@ export default function RegisterScreen() {
     if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
       await appDialog.showMessage({
         title: "Eksik bilgi",
-        message: "Tüm alanları doldurmalısın.",
+        message: "Tum alanlari doldurmalisin.",
         tone: "warning",
       });
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
       await appDialog.showMessage({
-        title: "Şifre kısa",
-        message: "Şifre en az 6 karakter olmalı.",
+        title: "Sifre yetersiz",
+        message: "Sifre en az 8 karakter olmali, harf ve rakam icermeli.",
         tone: "warning",
       });
       return;
@@ -54,22 +54,22 @@ export default function RegisterScreen() {
           phoneNumber,
           password,
         }),
-      })) as AuthUser;
+      })) as AuthResponse;
 
       await saveAuthData(data.token, data);
 
       await appDialog.showMessage({
-        title: "Hesabın hazır",
-        message: "Kayıt tamamlandı. Şimdi keşfetmeye başlayabilirsin.",
+        title: "Hesabin hazir",
+        message: "Kayit tamamlandi. Simdi kesfetmeye baslayabilirsin.",
         tone: "success",
       });
 
       router.replace("/");
     } catch (err: unknown) {
       await appDialog.showMessage({
-        title: "Kayıt hatası",
+        title: "Kayit hatasi",
         message:
-          err instanceof Error ? err.message : "Kayıt olurken bir sorun oluştu.",
+          err instanceof Error ? err.message : "Kayit olurken bir sorun olustu.",
         tone: "danger",
       });
     } finally {
@@ -80,13 +80,13 @@ export default function RegisterScreen() {
   return (
     <AppScrollCanvas contentContainerStyle={styles.content}>
       <HeroCard
-        eyebrow="BiKatıl’a Katıl"
-        title="Şehrindeki iyi planları kaçırma."
-        description="BiKatıl hesabını oluştur, etkinliklere katıl, organizer ol ve kendi topluluğunu büyüt."
+        eyebrow="BiKatile Katil"
+        title="Sehrindeki iyi planlari kacirma."
+        description="BiKatil hesabini olustur, etkinliklere katil, organizer ol ve kendi toplulugunu buyut."
       >
         <View style={styles.heroFooter}>
           <Text style={styles.heroCaption}>
-            Hızlı başlangıç, sıcak topluluk ve daha canlı bir şehir akışı.
+            Hizli baslangic, sicak topluluk ve daha canli bir sehir akisi.
           </Text>
           <Image
             source={require("../../assets/images/logo-glow.png")}
@@ -97,9 +97,9 @@ export default function RegisterScreen() {
       </HeroCard>
 
       <AppCard style={styles.formCard}>
-        <Text style={styles.formTitle}>BiKatıl hesabını oluştur</Text>
+        <Text style={styles.formTitle}>BiKatil hesabini olustur</Text>
         <Text style={styles.formSubtitle}>
-          Birkaç bilgiyle kaydol ve sana yakın etkinliklere kolayca bi’ katıl.
+          Birkac bilgiyle kaydol ve sana yakin etkinliklere kolayca katil.
         </Text>
 
         <View style={styles.formStack}>
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
             label="Ad soyad"
             value={fullName}
             onChangeText={setFullName}
-            placeholder="Ömer Yaralı"
+            placeholder="Omer Yarali"
           />
 
           <AppInput
@@ -128,17 +128,17 @@ export default function RegisterScreen() {
           />
 
           <AppInput
-            label="Şifre"
+            label="Sifre"
             value={password}
             onChangeText={setPassword}
-            placeholder="En az 6 karakter"
+            placeholder="En az 8 karakter, harf ve rakam"
             secureTextEntry
           />
         </View>
 
-        <PrimaryButton label="Kaydı Tamamla" onPress={handleRegister} loading={loading} />
+        <PrimaryButton label="Kaydi Tamamla" onPress={handleRegister} loading={loading} />
         <SecondaryButton
-          label="Zaten Hesabım Var"
+          label="Zaten Hesabim Var"
           onPress={() => router.push("/login" as any)}
         />
       </AppCard>

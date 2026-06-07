@@ -1,3 +1,5 @@
+import { clearAdminSession } from "./auth";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function apiFetch(path, options = {}) {
@@ -17,8 +19,7 @@ export async function apiFetch(path, options = {}) {
 
   if (response.status === 401) {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
+      clearAdminSession();
       window.location.href = "/login";
     }
 

@@ -1,152 +1,91 @@
-# MVP Özellikleri
+# MVP Ozellikleri
 
-Son güncelleme: `2026-06-05`
+Son guncelleme: `2026-06-07`
 
 ## MVP Hedefi
 
-İlk çalışır sürümün hedefi, yerel etkinlik keşfi ve temel yönetim akışlarını üretime yakın biçimde doğrulamaktır.
+BiKatil MVP'sinin hedefi, yerel etkinlik kesfi ile organizer yayin akisini uretime yakin bir duzende dogrulamaktir.
 
-MVP sorusu:
+Kontrol sorusu:
 
-> Kullanıcı etkinliği bulabiliyor, katılabiliyor ve organizer tarafı etkinlik yayınlayabiliyor mu?
+> Kullanici etkinligi bulup katilabiliyor mu, organizer etkinligi olusturup admin onayi ile yayina alabiliyor mu?
 
-## Kapsamdaki Roller
+## MVP Icinde Olanlar
 
-- `Participant`
-- `Organizer`
-- `Admin`
+### Kimlik ve Hesap
 
-## MVP İçinde Olan Özellikler
+- kayit olma
+- login
+- `/api/Auth/me`
+- profil guncelleme
+- sifre degistirme
+- rol bazli JWT
 
-### Kimlik Doğrulama ve Profil
+### Organizer Akisi
 
-- Kayıt olma
-- Giriş yapma
-- Mevcut kullanıcıyı görüntüleme
-- Profil güncelleme
-- Şifre değiştirme
+- organizer basvurusu
+- organizer profilini gorme
+- organizer profilini guncelleme
+- admin onayi ile organizer rolune gecis
+- organizer askiya alma / tekrar aktif etme
 
-### Organizer Akışı
+### Etkinlik Akisi
 
-- Organizer başvurusu yapma
-- Kendi organizer profilini görüntüleme
-- Organizer profilini güncelleme
-- Admin onayı sonrası organizer rolü kazanma
-- Askıya alınan organizerin tekrar aktifleştirilmesi
+- organizer olarak etkinlik olusturma
+- etkinlik guncelleme
+- etkinlik iptal etme
+- etkinligi tamamlandi yapma
+- approved etkinlikleri public listeleme
+- detay sayfasi
+- sehir, ilce, kategori, tarih, search ve kontenjan filtreleri
 
-### Kategori Yönetimi
+### Katilim Akisi
 
-- Aktif kategorileri listeleme
-- Admin tarafından kategori oluşturma
-- Kategoriyi aktif yapma
-- Kategoriyi pasif yapma
+- etkinlige katilma
+- etkinlikten ayrilma
+- katildigim etkinlikleri gorme
+- organizerin katilimcilari gormesi
+- `Attended` / `NoShow` isaretleme
 
-### Etkinlik Yönetimi
+### Admin Akisi
 
-- Organizer olarak etkinlik oluşturma
-- Organizer olarak etkinlik güncelleme
-- Etkinlik iptal etme
-- Etkinliği tamamlandı yapma
-- Onaylı etkinlikleri public olarak listeleme
-- Şehir, ilçe, kategori, tarih, ücret, arama ve kontenjan filtreleri
-- Etkinlik detay sayfası
+- dashboard ozet istatistikleri
+- kullanici listeleme
+- kullanici aktif / pasif yapma
+- organizer listeleme ve yonetme
+- etkinlik listeleme ve onay akisi
+- kategori yonetimi
 
-### Katılım Yönetimi
+### Arayuzler
 
-- Etkinliğe katılma
-- Etkinlikten ayrılma
-- Katıldığım etkinlikleri listeleme
-- Organizerin kendi etkinlik katılımcılarını görmesi
-- Katılımcıyı `Attended` veya `NoShow` olarak işaretleme
+- admin login ve yonetim sayfalari
+- mobil login / register / kesfet / profil / organizer alanlari
 
-### Admin Yönetimi
+## MVP Icinde Guvenlik Tarafi
 
-- Dashboard istatistikleri
-- Kullanıcı listeleme
-- Kullanıcıyı aktif/pasif yapma
-- Organizer listeleme
-- Organizer onaylama
-- Organizer reddetme
-- Organizer askıya alma
-- Organizeri yeniden aktifleştirme
-- Etkinlik listeleme
-- Etkinlik onaylama
-- Etkinlik reddetme
+- sifre hashleme: BCrypt
+- JWT dogrulama
+- role + active state kontrolu
+- token version invalidation
+- auth rate limit
+- kontrollu CORS
 
-### Admin Panel
+## MVP Disinda Kalanlar
 
-- Admin login
-- Yetkisiz kullanıcıyı login sayfasına yönlendirme
-- Dashboard ekranı
-- Organizer yönetim ekranı
-- Event yönetim ekranı
-- User yönetim ekranı
-- Category yönetim ekranı
+- online odeme
+- sponsorlu etkinlik / one cikarma
+- push notification
+- gercek medya yukleme servisi
+- mesajlasma
+- yorum ve puanlama
+- sifremi unuttum
+- SMS veya e-posta dogrulama
+- secure device storage gecisi
 
-### Mobile
+## MVP Sonrasi Net Oncelikler
 
-Mobil uygulama MVP öncesi aktif geliştirme aşamasında.
-
-Repoda mevcut olan ana mobil akışlar:
-
-- Giriş
-- Kayıt
-- Ana sayfada yaklaşan etkinlikler
-- Etkinlik detayı
-- Profil ekranı
-- Profil düzenleme
-- Şifre değiştirme
-- Katıldığım etkinlikler
-- Organizer başvurusu
-- Organizer etkinlik akışları
-
-## Kısmen Tamamlanmış veya Dikkat Gerektiren Alanlar
-
-- Mobil arayüzler mevcut olsa da uçtan uca doğrulama tamamlanmış kabul edilmemeli
-- Kategori yönetimi için admine özel "tüm kategoriler" listeleme endpointi henüz yok
-- Dosya yükleme ve medya yönetimi henüz gerçek altyapıya bağlı değil
-- Ortam değişkenleri ve deploy dokümanı henüz eksik
-
-## MVP Dışında Kalan Özellikler
-
-- Online ödeme
-- Komisyon sistemi
-- Sponsorlu etkinlik ve öne çıkarma
-- Push notification
-- Gerçek medya yükleme altyapısı
-- Mesajlaşma
-- Yorum ve puanlama
-- Harita entegrasyonu
-- Şifremi unuttum akışı
-- SMS veya e-posta doğrulama
-
-## MVP Başarı Kriterleri
-
-- Kullanıcı kayıt ve giriş yapabiliyor
-- JWT tabanlı yetkilendirme stabil çalışıyor
-- Organizer başvurusu admin tarafından yönetilebiliyor
-- Organizer etkinlik oluşturabiliyor
-- Admin etkinliği onaylayabiliyor
-- Kullanıcı etkinlikleri filtreleyebiliyor
-- Kullanıcı etkinliğe katılabiliyor ve ayrılabiliyor
-- Organizer katılımcı listesini yönetebiliyor
-- Admin panel temel yönetim görevlerini tamamlayabiliyor
-
-## İlk Saha Testi Hedefi
-
-```text
-3 organizer
-5 gerçek etkinlik
-50 kullanıcı
-10-20 gerçek katılım
-En az 1 etkinliğin uygulama üzerinden katılımcı toplaması
-```
-
-## MVP Sonrası Öncelikler
-
-1. Mobil uygulamayı üretim kalitesine taşımak
-2. Backend ve admin panel deploy sürecini oturtmak
-3. Medya yükleme altyapısı eklemek
-4. Şifremi unuttum akışını eklemek
-5. Harita ve konum deneyimini geliştirmek
-6. Bildirim sistemini eklemek
+1. Mobile token saklamayi `expo-secure-store` seviyesine tasimak
+2. Dosya yukleme ve medya servisini eklemek
+3. Sifremi unuttum akislarini eklemek
+4. Harita / konum deneyimini guclendirmek
+5. Push bildirim altyapisini kurmak

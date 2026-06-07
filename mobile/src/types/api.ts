@@ -7,6 +7,9 @@ export type AuthUser = {
   role: string;
   isActive: boolean;
   createdAt: string;
+};
+
+export type AuthResponse = AuthUser & {
   token: string;
 };
 

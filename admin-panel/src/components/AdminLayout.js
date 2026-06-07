@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import {
   AdminSurface,
   cn,
 } from "./admin-ui";
-import { getAdminUser, isAdminLoggedIn, logoutAdmin } from "../lib/auth";
+import {
+  getAdminSessionSnapshot,
+  getServerAdminSessionSnapshot,
+  logoutAdmin,
+  redirectToLogin,
+  subscribeAdminSession,
+} from "../lib/auth";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", code: "OV" },
@@ -19,16 +25,19 @@ const menuItems = [
 
 export default function AdminLayout({ children, title, description }) {
   const pathname = usePathname();
-  const isBrowser = typeof window !== "undefined";
-  const isAuthenticated = isBrowser && isAdminLoggedIn();
+  const authState = useSyncExternalStore(
+    subscribeAdminSession,
+    getAdminSessionSnapshot,
+    getServerAdminSessionSnapshot
+  );
 
   useEffect(() => {
-    if (isBrowser && !isAuthenticated) {
-      logoutAdmin();
+    if (authState.checked && !authState.isAuthenticated) {
+      redirectToLogin();
     }
-  }, [isAuthenticated, isBrowser]);
+  }, [authState.checked, authState.isAuthenticated]);
 
-  if (!isAuthenticated) {
+  if (!authState.checked || !authState.isAuthenticated) {
     return (
       <main className="min-h-screen px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-2xl">
@@ -56,7 +65,7 @@ export default function AdminLayout({ children, title, description }) {
     );
   }
 
-  const adminUser = getAdminUser();
+  const { adminUser } = authState;
 
   return (
     <main className="min-h-screen">

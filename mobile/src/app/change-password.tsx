@@ -12,7 +12,7 @@ import {
   SectionHeading,
 } from "../components/app-ui";
 import { apiFetch } from "../services/apiService";
-import { getAuthToken } from "../services/authStorage";
+import { clearAuthData, getAuthToken } from "../services/authStorage";
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -24,16 +24,16 @@ export default function ChangePasswordScreen() {
     if (!currentPassword.trim() || !newPassword.trim() || !newPasswordAgain.trim()) {
       await appDialog.showMessage({
         title: "Eksik bilgi",
-        message: "Tüm alanları doldurmalısın.",
+        message: "Tum alanlari doldurmalisin.",
         tone: "warning",
       });
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8 || !/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
       await appDialog.showMessage({
-        title: "Şifre kısa",
-        message: "Yeni şifre en az 6 karakter olmalı.",
+        title: "Sifre yetersiz",
+        message: "Yeni sifre en az 8 karakter olmali, harf ve rakam icermeli.",
         tone: "warning",
       });
       return;
@@ -41,8 +41,8 @@ export default function ChangePasswordScreen() {
 
     if (newPassword !== newPasswordAgain) {
       await appDialog.showMessage({
-        title: "Eşleşme sorunu",
-        message: "Yeni şifreler birbiriyle aynı olmalı.",
+        title: "Eslesme sorunu",
+        message: "Yeni sifreler birbiriyle ayni olmali.",
         tone: "warning",
       });
       return;
@@ -69,17 +69,19 @@ export default function ChangePasswordScreen() {
         }),
       });
 
+      await clearAuthData();
+
       await appDialog.showMessage({
-        title: "Şifre güncellendi",
-        message: "Yeni şifren artık aktif.",
+        title: "Sifre guncellendi",
+        message: "Guvenlik icin yeniden giris yapman gerekiyor.",
         tone: "success",
       });
-      router.back();
+      router.replace("/login" as any);
     } catch (err: unknown) {
       await appDialog.showMessage({
-        title: "Şifre değiştirilemedi",
+        title: "Sifre degistirilemedi",
         message:
-          err instanceof Error ? err.message : "Şifre güncellenirken bir sorun oluştu.",
+          err instanceof Error ? err.message : "Sifre guncellenirken bir sorun olustu.",
         tone: "danger",
       });
     } finally {
@@ -92,38 +94,38 @@ export default function ChangePasswordScreen() {
       <AppBackButton onPress={() => router.back()} />
 
       <SectionHeading
-        eyebrow="Güvenlik"
-        title="Şifreni yenile"
-        subtitle="Hesabını güvenli tutmak için güçlü ve kolay hatırlanır bir şifre belirle."
+        eyebrow="Guvenlik"
+        title="Sifreni yenile"
+        subtitle="Hesabini guvenli tutmak icin guclu ve kolay hatirlanir bir sifre belirle."
       />
 
       <AppCard style={styles.card}>
         <AppInput
-          label="Mevcut şifre"
+          label="Mevcut sifre"
           value={currentPassword}
           onChangeText={setCurrentPassword}
-          placeholder="Mevcut şifren"
+          placeholder="Mevcut sifren"
           secureTextEntry
         />
 
         <AppInput
-          label="Yeni şifre"
+          label="Yeni sifre"
           value={newPassword}
           onChangeText={setNewPassword}
-          placeholder="En az 6 karakter"
+          placeholder="En az 8 karakter, harf ve rakam"
           secureTextEntry
         />
 
         <AppInput
-          label="Yeni şifre tekrar"
+          label="Yeni sifre tekrar"
           value={newPasswordAgain}
           onChangeText={setNewPasswordAgain}
-          placeholder="Yeni şifreyi tekrar gir"
+          placeholder="Yeni sifreyi tekrar gir"
           secureTextEntry
         />
 
         <PrimaryButton
-          label="Şifreyi Güncelle"
+          label="Sifreyi Guncelle"
           onPress={handleChangePassword}
           loading={saving}
         />

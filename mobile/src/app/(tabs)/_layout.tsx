@@ -1,6 +1,6 @@
 import { Tabs, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { AppTheme, Fonts, Shadows } from "../../constants/theme";
@@ -15,17 +15,41 @@ import type { AuthUser } from "../../types/api";
 
 export default function TabsLayout() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const lastSyncAtRef = useRef(0);
+  const syncInFlightRef = useRef(false);
 
-  const loadCurrentUser = useCallback(async () => {
+  const loadStoredUser = useCallback(async () => {
     const token = await getAuthToken();
 
     if (!token) {
       setCurrentUser(null);
-      return;
+      return { token: null, storedUser: null };
     }
 
     const storedUser = await getAuthUser();
     setCurrentUser(storedUser);
+
+    return { token, storedUser };
+  }, []);
+
+  const syncCurrentUser = useCallback(async (options?: { force?: boolean }) => {
+    const { force = false } = options ?? {};
+    const now = Date.now();
+    const { token, storedUser } = await loadStoredUser();
+
+    if (!token) {
+      return;
+    }
+
+    if (syncInFlightRef.current) {
+      return;
+    }
+
+    if (!force && now - lastSyncAtRef.current < 60000) {
+      return;
+    }
+
+    syncInFlightRef.current = true;
 
     try {
       const freshUser = (await apiFetch("/api/Auth/me", {
@@ -34,32 +58,31 @@ export default function TabsLayout() {
         },
       })) as AuthUser;
 
-      const normalizedUser = {
-        ...freshUser,
-        token,
-      };
+      lastSyncAtRef.current = Date.now();
+      setCurrentUser(freshUser);
 
-      setCurrentUser(normalizedUser);
-
-      if (JSON.stringify(storedUser) !== JSON.stringify(normalizedUser)) {
-        await saveAuthData(token, normalizedUser);
+      if (JSON.stringify(storedUser) !== JSON.stringify(freshUser)) {
+        await saveAuthData(token, freshUser);
       }
     } catch {
+      lastSyncAtRef.current = Date.now();
       setCurrentUser(storedUser);
+    } finally {
+      syncInFlightRef.current = false;
     }
-  }, []);
+  }, [loadStoredUser]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadCurrentUser();
-    }, [loadCurrentUser])
+      void syncCurrentUser({ force: true });
+    }, [syncCurrentUser])
   );
 
   useEffect(() => {
     return subscribeAuthChange(() => {
-      void loadCurrentUser();
+      void loadStoredUser();
     });
-  }, [loadCurrentUser]);
+  }, [loadStoredUser]);
 
   const showOrganizerTab = currentUser?.role === "Organizer";
 

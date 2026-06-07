@@ -4,6 +4,15 @@ const TOKEN_KEY = "authToken";
 const USER_KEY = "authUser";
 const authListeners = new Set();
 
+function sanitizeAuthUser(user) {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  const { token: _token, ...safeUser } = user;
+  return safeUser;
+}
+
 function emitAuthChange() {
   authListeners.forEach((listener) => {
     try {
@@ -15,8 +24,27 @@ function emitAuthChange() {
 }
 
 export async function saveAuthData(token, user) {
-  await AsyncStorage.setItem(TOKEN_KEY, token);
-  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  const safeUser = sanitizeAuthUser(user);
+
+  if (!token || !safeUser) {
+    await clearAuthData();
+    return;
+  }
+
+  const nextUserRaw = JSON.stringify(safeUser);
+  const storedEntries = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
+  const storedToken = storedEntries[0]?.[1] ?? null;
+  const storedUserRaw = storedEntries[1]?.[1] ?? null;
+
+  if (storedToken === token && storedUserRaw === nextUserRaw) {
+    return;
+  }
+
+  await AsyncStorage.multiSet([
+    [TOKEN_KEY, token],
+    [USER_KEY, nextUserRaw],
+  ]);
+
   emitAuthChange();
 }
 
@@ -34,13 +62,21 @@ export async function getAuthUser() {
   try {
     return JSON.parse(userRaw);
   } catch {
+    await clearAuthData();
     return null;
   }
 }
 
 export async function clearAuthData() {
-  await AsyncStorage.removeItem(TOKEN_KEY);
-  await AsyncStorage.removeItem(USER_KEY);
+  const storedEntries = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
+  const hasStoredToken = !!storedEntries[0]?.[1];
+  const hasStoredUser = !!storedEntries[1]?.[1];
+
+  if (!hasStoredToken && !hasStoredUser) {
+    return;
+  }
+
+  await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
   emitAuthChange();
 }
 

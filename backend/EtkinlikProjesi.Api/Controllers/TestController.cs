@@ -6,9 +6,10 @@ namespace EtkinlikProjesi.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[ApiExplorerSettings(IgnoreApi = true)]
 public class TestController : ControllerBase
 {
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpGet("me")]
     public IActionResult Me()
     {

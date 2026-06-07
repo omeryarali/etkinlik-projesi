@@ -1,7 +1,8 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EtkinlikProjesi.Api.Data;
 using EtkinlikProjesi.Api.Dtos.Organizer;
 using EtkinlikProjesi.Api.Models;
+using EtkinlikProjesi.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +28,7 @@ public class OrganizerController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userIdString))
         {
-            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+            return Unauthorized("Kullanici bilgisi alinamadi.");
         }
 
         var userId = int.Parse(userIdString);
@@ -36,7 +37,7 @@ public class OrganizerController : ControllerBase
 
         if (user == null)
         {
-            return NotFound("Kullanıcı bulunamadı.");
+            return NotFound("Kullanici bulunamadi.");
         }
 
         var existingProfile = await _context.OrganizerProfiles
@@ -44,7 +45,7 @@ public class OrganizerController : ControllerBase
 
         if (existingProfile != null)
         {
-            return BadRequest("Zaten bir organizatör başvurunuz/profiliniz var.");
+            return BadRequest("Zaten bir organizator basvurunuz/profiliniz var.");
         }
 
         if (string.IsNullOrWhiteSpace(request.OrganizerName) ||
@@ -52,25 +53,33 @@ public class OrganizerController : ControllerBase
             string.IsNullOrWhiteSpace(request.City) ||
             string.IsNullOrWhiteSpace(request.District))
         {
-            return BadRequest("Organizatör adı, telefon, şehir ve ilçe zorunludur.");
+            return BadRequest("Organizator adi, telefon, sehir ve ilce zorunludur.");
         }
 
         var organizerProfile = new OrganizerProfile
         {
             UserId = userId,
-            OrganizerName = request.OrganizerName,
-            OrganizerType = request.OrganizerType,
-            Description = request.Description,
-            PhoneNumber = request.PhoneNumber,
-            InstagramUrl = request.InstagramUrl,
-            City = request.City,
-            District = request.District,
+            OrganizerName = request.OrganizerName.Trim(),
+            OrganizerType = request.OrganizerType?.Trim() ?? string.Empty,
+            Description = request.Description?.Trim() ?? string.Empty,
+            PhoneNumber = request.PhoneNumber.Trim(),
+            InstagramUrl = request.InstagramUrl?.Trim() ?? string.Empty,
+            City = request.City.Trim(),
+            District = request.District.Trim(),
             Status = "Pending",
             CreatedAt = DateTime.UtcNow
         };
 
         _context.OrganizerProfiles.Add(organizerProfile);
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException exception) when (AppSecurity.IsUniqueConstraintViolation(exception))
+        {
+            return BadRequest("Zaten bir organizator basvurunuz/profiliniz var.");
+        }
 
         var response = new OrganizerProfileResponse
         {
@@ -100,7 +109,7 @@ public class OrganizerController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userIdString))
         {
-            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+            return Unauthorized("Kullanici bilgisi alinamadi.");
         }
 
         var userId = int.Parse(userIdString);
@@ -110,7 +119,7 @@ public class OrganizerController : ControllerBase
 
         if (profile == null)
         {
-            return NotFound("Organizatör profiliniz bulunamadı.");
+            return NotFound("Organizator profiliniz bulunamadi.");
         }
 
         var response = new OrganizerProfileResponse
@@ -141,7 +150,7 @@ public class OrganizerController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userIdString))
         {
-            return Unauthorized("Kullanıcı bilgisi alınamadı.");
+            return Unauthorized("Kullanici bilgisi alinamadi.");
         }
 
         var userId = int.Parse(userIdString);
@@ -151,12 +160,12 @@ public class OrganizerController : ControllerBase
 
         if (profile == null)
         {
-            return NotFound("Organizatör profiliniz bulunamadı.");
+            return NotFound("Organizator profiliniz bulunamadi.");
         }
 
         if (profile.Status == "Suspended")
         {
-            return BadRequest("Askıya alınmış organizatör profili güncellenemez.");
+            return BadRequest("Askiya alinmis organizator profili guncellenemez.");
         }
 
         if (string.IsNullOrWhiteSpace(request.OrganizerName) ||
@@ -164,22 +173,17 @@ public class OrganizerController : ControllerBase
             string.IsNullOrWhiteSpace(request.City) ||
             string.IsNullOrWhiteSpace(request.District))
         {
-            return BadRequest("Organizatör adı, telefon, şehir ve ilçe zorunludur.");
+            return BadRequest("Organizator adi, telefon, sehir ve ilce zorunludur.");
         }
 
-        profile.OrganizerName = request.OrganizerName;
-        profile.OrganizerType = request.OrganizerType;
-        profile.Description = request.Description;
-        profile.PhoneNumber = request.PhoneNumber;
-        profile.InstagramUrl = request.InstagramUrl;
-        profile.City = request.City;
-        profile.District = request.District;
+        profile.OrganizerName = request.OrganizerName.Trim();
+        profile.OrganizerType = request.OrganizerType?.Trim() ?? string.Empty;
+        profile.Description = request.Description?.Trim() ?? string.Empty;
+        profile.PhoneNumber = request.PhoneNumber.Trim();
+        profile.InstagramUrl = request.InstagramUrl?.Trim() ?? string.Empty;
+        profile.City = request.City.Trim();
+        profile.District = request.District.Trim();
 
-        /*
-         * Güvenlik mantığı:
-         * Eğer organizatör daha önce onaylandıysa ve profil bilgilerini değiştiriyorsa
-         * tekrar admin kontrolüne düşmesi daha güvenli olur.
-         */
         if (profile.Status == "Approved")
         {
             profile.Status = "Pending";
@@ -190,6 +194,7 @@ public class OrganizerController : ControllerBase
             if (user != null && user.Role == "Organizer")
             {
                 user.Role = "Participant";
+                user.TokenVersion++;
             }
         }
 

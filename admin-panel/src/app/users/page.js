@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import {
@@ -21,6 +21,14 @@ import { apiFetch } from "../../lib/api";
 import { getAdminToken, redirectToLogin } from "../../lib/auth";
 
 export default function UsersPage() {
+  return (
+    <Suspense fallback={<UsersPageFallback />}>
+      <UsersPageContent />
+    </Suspense>
+  );
+}
+
+function UsersPageContent() {
   const searchParams = useSearchParams();
   const initialRole = searchParams.get("role") || "";
 
@@ -405,5 +413,19 @@ function UserStatusBadge({ isActive }) {
     <StatusPill tone={isActive ? "success" : "danger"}>
       {isActive ? "Aktif" : "Pasif"}
     </StatusPill>
+  );
+}
+
+function UsersPageFallback() {
+  return (
+    <AdminLayout
+      title="Kullanicilar"
+      description="Sistemdeki hesaplari, rollerini ve aktiflik durumlarini yonet."
+    >
+      <LoadingPanel
+        title="Kullanici paneli hazirlaniyor"
+        description="Hesap listesi ve filtreler yukleniyor."
+      />
+    </AdminLayout>
   );
 }

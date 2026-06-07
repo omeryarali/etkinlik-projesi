@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ActionButton, AdminSurface, Notice, StatusPill } from "../../components/admin-ui";
 import { apiFetch } from "../../lib/api";
-import { getAdminToken, getAdminUser } from "../../lib/auth";
+import { getAdminToken, getAdminUser, saveAdminSession } from "../../lib/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -39,8 +39,7 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem("adminToken", data.token);
-      localStorage.setItem("adminUser", JSON.stringify(data));
+      saveAdminSession(data.token, data);
       window.location.href = "/dashboard";
     } catch (err) {
       setError(err.message || "Giriş yapılırken bir sorun oluştu.");

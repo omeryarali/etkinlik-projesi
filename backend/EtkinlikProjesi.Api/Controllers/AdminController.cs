@@ -3,6 +3,7 @@ using EtkinlikProjesi.Api.Dtos.Admin;
 using EtkinlikProjesi.Api.Dtos.Common;
 using EtkinlikProjesi.Api.Dtos.Event;
 using EtkinlikProjesi.Api.Dtos.Organizer;
+using EtkinlikProjesi.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -145,6 +146,7 @@ public class AdminController : ControllerBase
         organizerProfile.ApprovedAt = DateTime.UtcNow;
 
         user.Role = "Organizer";
+        InvalidateUserSessions(user);
 
         await _context.SaveChangesAsync();
 
@@ -424,6 +426,7 @@ public class AdminController : ControllerBase
         }
 
         user.IsActive = true;
+        InvalidateUserSessions(user);
 
         await _context.SaveChangesAsync();
 
@@ -446,6 +449,7 @@ public class AdminController : ControllerBase
         }
 
         user.IsActive = false;
+        InvalidateUserSessions(user);
 
         await _context.SaveChangesAsync();
 
@@ -481,6 +485,7 @@ public class AdminController : ControllerBase
         if (user.Role == "Organizer")
         {
             user.Role = "Participant";
+            InvalidateUserSessions(user);
         }
 
         await _context.SaveChangesAsync();
@@ -517,6 +522,7 @@ public class AdminController : ControllerBase
         organizerProfile.ApprovedAt = DateTime.UtcNow;
 
         user.Role = "Organizer";
+        InvalidateUserSessions(user);
 
         await _context.SaveChangesAsync();
 
@@ -553,5 +559,10 @@ public class AdminController : ControllerBase
         };
 
         return Ok(stats);
+    }
+
+    private static void InvalidateUserSessions(User user)
+    {
+        user.TokenVersion++;
     }
 }

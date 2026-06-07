@@ -2,9 +2,11 @@
 using EtkinlikProjesi.Api.Dtos.Common;
 using EtkinlikProjesi.Api.Dtos.Event;
 using EtkinlikProjesi.Api.Models;
+using EtkinlikProjesi.Api.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Security.Claims;
 
 namespace EtkinlikProjesi.Api.Controllers;
@@ -443,42 +445,67 @@ public class EventController : ControllerBase
 
         var userId = int.Parse(userIdString);
 
-        var eventItem = await _context.Events
-            .FirstOrDefaultAsync(x => x.Id == id && x.Status == "Approved");
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-        if (eventItem == null)
+        try
         {
-            return NotFound("Onaylı etkinlik bulunamadı.");
+            var eventItem = await _context.Events
+                .FirstOrDefaultAsync(x => x.Id == id && x.Status == "Approved");
+
+            if (eventItem == null)
+            {
+                return NotFound("Onayli etkinlik bulunamadi.");
+            }
+
+            var existingParticipant = await _context.EventParticipants
+                .FirstOrDefaultAsync(x => x.EventId == id && x.UserId == userId);
+
+            if (existingParticipant?.Status == "Joined")
+            {
+                return BadRequest("Bu etkinlige zaten katildiniz.");
+            }
+
+            var currentParticipantCount = await _context.EventParticipants
+                .CountAsync(x => x.EventId == id && x.Status == "Joined");
+
+            if (currentParticipantCount >= eventItem.Capacity)
+            {
+                return BadRequest("Etkinlik kontenjani dolmustur.");
+            }
+
+            if (existingParticipant != null)
+            {
+                existingParticipant.Status = "Joined";
+                existingParticipant.JoinedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                var participant = new EventParticipant
+                {
+                    EventId = id,
+                    UserId = userId,
+                    Status = "Joined",
+                    JoinedAt = DateTime.UtcNow
+                };
+
+                _context.EventParticipants.Add(participant);
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok("Etkinlige katilim basarili.");
         }
-
-        var alreadyJoined = await _context.EventParticipants
-            .AnyAsync(x => x.EventId == id && x.UserId == userId && x.Status == "Joined");
-
-        if (alreadyJoined)
+        catch (DbUpdateException exception) when (AppSecurity.IsUniqueConstraintViolation(exception))
         {
-            return BadRequest("Bu etkinliğe zaten katıldınız.");
+            await transaction.RollbackAsync();
+            return Conflict("Bu etkinlik icin katilim kaydiniz zaten olusmus. Lutfen tekrar deneyin.");
         }
-
-        var currentParticipantCount = await _context.EventParticipants
-            .CountAsync(x => x.EventId == id && x.Status == "Joined");
-
-        if (currentParticipantCount >= eventItem.Capacity)
+        catch (Exception exception) when (AppSecurity.IsSerializationConflict(exception))
         {
-            return BadRequest("Etkinlik kontenjanı dolmuştur.");
+            await transaction.RollbackAsync();
+            return Conflict("Ayni anda cok sayida katilim alindi. Lutfen tekrar deneyin.");
         }
-
-        var participant = new EventParticipant
-        {
-            EventId = id,
-            UserId = userId,
-            Status = "Joined",
-            JoinedAt = DateTime.UtcNow
-        };
-
-        _context.EventParticipants.Add(participant);
-        await _context.SaveChangesAsync();
-
-        return Ok("Etkinliğe katılım başarılı.");
     }
 
     [Authorize]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import {
@@ -24,6 +24,14 @@ import { apiFetch } from "../../lib/api";
 import { getAdminToken, redirectToLogin } from "../../lib/auth";
 
 export default function OrganizersPage() {
+  return (
+    <Suspense fallback={<OrganizersPageFallback />}>
+      <OrganizersPageContent />
+    </Suspense>
+  );
+}
+
+function OrganizersPageContent() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status") || "";
 
@@ -497,4 +505,18 @@ function OrganizerStatusBadge({ status }) {
   };
 
   return <StatusPill tone={tones[status] || "neutral"}>{status}</StatusPill>;
+}
+
+function OrganizersPageFallback() {
+  return (
+    <AdminLayout
+      title="Organizatorler"
+      description="Basvurulari degerlendir, aktif organizer hesaplarini denetle ve topluluk guvenini koru."
+    >
+      <LoadingPanel
+        title="Organizer paneli hazirlaniyor"
+        description="Basvuru kuyrugu ve filtreler yukleniyor."
+      />
+    </AdminLayout>
+  );
 }

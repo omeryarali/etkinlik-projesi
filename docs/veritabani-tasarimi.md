@@ -1,16 +1,14 @@
-# Veritabanı Tasarımı
+# Veritabani Tasarimi
 
-Son güncelleme: `2026-06-05`
-
-Bu belge, backend tarafındaki temel veri modelini kodla uyumlu olacak şekilde özetler.
+Son guncelleme: `2026-06-07`
 
 ## Teknoloji
 
-- `PostgreSQL`
-- `Entity Framework Core`
-- `EF Core Migrations`
+- PostgreSQL
+- Entity Framework Core
+- EF Core Migrations
 
-## Tablolar
+## Ana Tablolar
 
 - `Users`
 - `OrganizerProfiles`
@@ -19,7 +17,7 @@ Bu belge, backend tarafındaki temel veri modelini kodla uyumlu olacak şekilde 
 - `EventParticipants`
 - `__EFMigrationsHistory`
 
-## İlişki Özeti
+## Iliski Ozeti
 
 ```text
 Users (1) -------- (0..1) OrganizerProfiles
@@ -29,180 +27,114 @@ Users (1) ---------------- (N) EventParticipants
 Events (1) --------------- (N) EventParticipants
 ```
 
-Kod tarafında ilişkiler `DeleteBehavior.Restrict` ile kurulmuştur.
+Tum ana iliskiler `DeleteBehavior.Restrict` ile kuruludur.
 
 ## Users
 
-Sistemdeki tüm kullanıcıları tutar.
-
-| Alan | Tip | Açıklama |
+| Alan | Tip | Aciklama |
 |---|---|---|
-| `Id` | `int` | Kullanıcı kimliği |
-| `FullName` | `string` | Ad soyad |
-| `Email` | `string` | E-posta |
-| `PhoneNumber` | `string` | Telefon |
-| `PasswordHash` | `string` | BCrypt hash değeri |
-| `ProfileImageUrl` | `string` | Profil görseli adresi |
-| `Role` | `string` | `Participant`, `Organizer`, `Admin` |
-| `IsActive` | `bool` | Hesap aktif mi |
-| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
+| `Id` | `int` | kullanici id |
+| `FullName` | `string` | gorunen ad soyad |
+| `Email` | `string` | kullanici e-postasi |
+| `NormalizedEmail` | `string` | lower-case tekillik anahtari |
+| `PhoneNumber` | `string` | telefon |
+| `PasswordHash` | `string` | BCrypt hash |
+| `ProfileImageUrl` | `string` | profil gorseli |
+| `Role` | `string` | Participant / Organizer / Admin |
+| `IsActive` | `bool` | hesap aktif mi |
+| `TokenVersion` | `int` | oturum invalidation sayaci |
+| `CreatedAt` | `DateTime` | olusturma tarihi |
 
 Kurallar:
 
-- Yeni kullanıcı varsayılan olarak `Participant` rolüyle açılır.
-- Şifre düz metin tutulmaz.
-- `IsActive = false` olan kullanıcı giriş yapamaz.
+- `NormalizedEmail` unique index altindadir.
+- sifre duz metin tutulmaz.
+- `IsActive = false` kullanici yeni token alamaz, mevcut tokenlari da reddedilir.
 
 ## OrganizerProfiles
 
-Organizer başvurusunu ve organizer profilini tutar.
-
-| Alan | Tip | Açıklama |
+| Alan | Tip | Aciklama |
 |---|---|---|
-| `Id` | `int` | Profil kimliği |
-| `UserId` | `int` | Bağlı kullanıcı |
-| `OrganizerName` | `string` | Görünen organizer adı |
-| `OrganizerType` | `string` | Tür bilgisi |
-| `Description` | `string` | Açıklama |
-| `PhoneNumber` | `string` | Telefon |
-| `InstagramUrl` | `string` | Sosyal medya bağlantısı |
-| `City` | `string` | Şehir |
-| `District` | `string` | İlçe |
-| `Status` | `string` | Başvuru durumu |
-| `RejectionReason` | `string` | Red sebebi |
-| `CreatedAt` | `DateTime` | Başvuru tarihi |
-| `ApprovedAt` | `DateTime?` | Onay tarihi |
+| `Id` | `int` | profil id |
+| `UserId` | `int` | bagli kullanici |
+| `OrganizerName` | `string` | gorunen organizer adi |
+| `OrganizerType` | `string` | tur bilgisi |
+| `Description` | `string` | aciklama |
+| `PhoneNumber` | `string` | telefon |
+| `InstagramUrl` | `string` | sosyal baglanti |
+| `City` | `string` | sehir |
+| `District` | `string` | ilce |
+| `Status` | `string` | Pending / Approved / Rejected / Suspended |
+| `RejectionReason` | `string` | red notu |
+| `CreatedAt` | `DateTime` | basvuru tarihi |
+| `ApprovedAt` | `DateTime?` | onay tarihi |
 
-`OrganizerType` örnekleri:
+Kurallar:
 
-```text
-Individual
-Venue
-Club
-Institution
-```
-
-`Status` değerleri:
-
-```text
-Pending
-Approved
-Rejected
-Suspended
-```
-
-Davranış:
-
-- Bir kullanıcı için tek organizer profili beklenir.
-- Onaylı profil güncellenirse tekrar `Pending` olur.
-- Onaylı profil güncellendiğinde kullanıcı rolü tekrar `Participant` yapılır.
+- `UserId` unique index altindadir.
+- bir kullanici icin tek organizer profili bulunur.
 
 ## EventCategories
 
-Etkinlik sınıflandırması için kullanılır.
-
-| Alan | Tip | Açıklama |
+| Alan | Tip | Aciklama |
 |---|---|---|
-| `Id` | `int` | Kategori kimliği |
-| `Name` | `string` | Kategori adı |
-| `Description` | `string` | Açıklama |
-| `IsActive` | `bool` | Aktiflik durumu |
-| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
-
-Kurallar:
-
-- Public listelemede yalnızca aktif kategoriler döner.
-- Silme yerine `IsActive = false` yaklaşımı tercih edilir.
+| `Id` | `int` | kategori id |
+| `Name` | `string` | kategori adi |
+| `Description` | `string` | aciklama |
+| `IsActive` | `bool` | aktiflik |
+| `CreatedAt` | `DateTime` | olusturma tarihi |
 
 ## Events
 
-Organizer tarafından oluşturulan etkinlikleri tutar.
-
-| Alan | Tip | Açıklama |
+| Alan | Tip | Aciklama |
 |---|---|---|
-| `Id` | `int` | Etkinlik kimliği |
-| `OrganizerProfileId` | `int` | Etkinlik sahibi organizer |
-| `EventCategoryId` | `int` | Kategori |
-| `Title` | `string` | Başlık |
-| `Description` | `string` | Açıklama |
-| `StartDate` | `DateTime` | Başlangıç |
-| `EndDate` | `DateTime?` | Bitiş |
-| `City` | `string` | Şehir |
-| `District` | `string` | İlçe |
-| `LocationName` | `string` | Mekan adı |
-| `Address` | `string` | Adres |
-| `Latitude` | `double?` | Enlem |
-| `Longitude` | `double?` | Boylam |
-| `Capacity` | `int` | Kontenjan |
-| `IsPaid` | `bool` | Ücretli mi |
-| `Price` | `decimal?` | Ücret |
-| `CoverImageUrl` | `string` | Kapak görseli |
-| `Rules` | `string` | Katılım kuralları |
-| `Status` | `string` | Event durumu |
-| `CreatedAt` | `DateTime` | Oluşturulma tarihi |
-| `ApprovedAt` | `DateTime?` | Onay tarihi |
-
-`Status` değerleri:
-
-```text
-Pending
-Approved
-Rejected
-Cancelled
-Completed
-```
-
-Kurallar:
-
-- Public tarafta yalnızca `Approved` etkinlikler görünür.
-- Güncellenen etkinlik tekrar `Pending` olur.
-- `Cancelled` veya `Completed` etkinlik güncellenemez.
-- Katılımcı sayısı aktif `Joined` kayıtları üzerinden hesaplanır.
+| `Id` | `int` | etkinlik id |
+| `OrganizerProfileId` | `int` | etkinlik sahibi organizer |
+| `EventCategoryId` | `int` | kategori |
+| `Title` | `string` | baslik |
+| `Description` | `string` | aciklama |
+| `StartDate` | `DateTime` | baslangic |
+| `EndDate` | `DateTime?` | bitis |
+| `City` | `string` | sehir |
+| `District` | `string` | ilce |
+| `LocationName` | `string` | mekan adi |
+| `Address` | `string` | acik adres |
+| `Latitude` | `double?` | enlem |
+| `Longitude` | `double?` | boylam |
+| `Capacity` | `int` | kontenjan |
+| `IsPaid` | `bool` | ucretli mi |
+| `Price` | `decimal?` | fiyat |
+| `CoverImageUrl` | `string` | kapak gorseli |
+| `Rules` | `string` | kurallar |
+| `Status` | `string` | Pending / Approved / Rejected / Cancelled / Completed |
+| `CreatedAt` | `DateTime` | olusturma tarihi |
+| `ApprovedAt` | `DateTime?` | onay tarihi |
 
 ## EventParticipants
 
-Kullanıcıların etkinlik katılım kayıtlarını tutar.
-
-| Alan | Tip | Açıklama |
+| Alan | Tip | Aciklama |
 |---|---|---|
-| `Id` | `int` | Kayıt kimliği |
-| `EventId` | `int` | Bağlı etkinlik |
-| `UserId` | `int` | Bağlı kullanıcı |
-| `Status` | `string` | Katılım durumu |
-| `JoinedAt` | `DateTime` | Katılım zamanı |
-
-`Status` değerleri:
-
-```text
-Joined
-Cancelled
-Attended
-NoShow
-```
+| `Id` | `int` | katilim kaydi id |
+| `EventId` | `int` | bagli etkinlik |
+| `UserId` | `int` | bagli kullanici |
+| `Status` | `string` | Joined / Cancelled / Attended / NoShow |
+| `JoinedAt` | `DateTime` | son katilim zamani |
 
 Kurallar:
 
-- Aynı kullanıcı aynı etkinliğe ikinci kez aktif `Joined` kaydı açamaz.
-- Ayrılma işleminde kayıt silinmez, `Cancelled` yapılır.
-- Organizer yoklama için `Attended` ve `NoShow` değerlerini kullanır.
+- `EventId + UserId` unique index altindadir.
+- ayni kullanici ayni etkinlik icin birden fazla satirla tutulmaz.
+- ayrilma kaydi silmez, durumu `Cancelled` yapar.
 
-## Tarih Yönetimi
+## Migration Notu
 
-Kod tarafında tarih alanları UTC mantığıyla ele alınır.
+`SecurityHardening` migration'i:
 
-Örnek alanlar:
+- `NormalizedEmail` kolonunu ekler ve mevcut kullanicilari normalize eder
+- duplicate `EventParticipants` kayitlarini son kaydi koruyacak sekilde temizler
+- kritik unique kurallari ekler
 
-- `CreatedAt`
-- `ApprovedAt`
-- `StartDate`
-- `EndDate`
-- `JoinedAt`
-
-Backend tarafında `DateTime.UtcNow` kullanımı tercih edilir.
-
-## DTO Yapısı
-
-Backend içindeki DTO klasörleri:
+## DTO Katmanlari
 
 ```text
 Dtos/Auth
@@ -212,38 +144,3 @@ Dtos/Category
 Dtos/Event
 Dtos/Common
 ```
-
-Öne çıkan tipler:
-
-- `AuthResponse`
-- `OrganizerProfileResponse`
-- `CategoryResponse`
-- `EventResponse`
-- `EventParticipantResponse`
-- `PagedResponse<T>`
-
-## Pagination Yapısı
-
-Birden fazla liste endpointinde aşağıdaki ortak yapı kullanılır:
-
-```json
-{
-  "items": [],
-  "page": 1,
-  "pageSize": 10,
-  "totalCount": 0,
-  "totalPages": 0,
-  "hasPreviousPage": false,
-  "hasNextPage": false
-}
-```
-
-## İleride Eklenebilecek Tablolar
-
-- `EventImages`
-- `OrganizerImages`
-- `Notifications`
-- `Reports`
-- `Payments`
-- `Reviews`
-- `PasswordResetTokens`

@@ -23,7 +23,15 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<User>()
+            .HasIndex(x => x.NormalizedEmail)
+            .IsUnique();
+
         // User - OrganizerProfile ilişkisi
+        modelBuilder.Entity<OrganizerProfile>()
+            .HasIndex(x => x.UserId)
+            .IsUnique();
+
         modelBuilder.Entity<OrganizerProfile>()
             .HasOne(x => x.User)
             .WithMany()
@@ -52,6 +60,10 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         // User - EventParticipant ilişkisi
+        modelBuilder.Entity<EventParticipant>()
+            .HasIndex(x => new { x.EventId, x.UserId })
+            .IsUnique();
+
         modelBuilder.Entity<EventParticipant>()
             .HasOne(x => x.User)
             .WithMany()

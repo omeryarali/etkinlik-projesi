@@ -15,7 +15,7 @@ import {
 import { AppTheme, Fonts } from "../constants/theme";
 import { apiFetch } from "../services/apiService";
 import { saveAuthData } from "../services/authStorage";
-import type { AuthUser } from "../types/api";
+import type { AuthResponse } from "../types/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -26,13 +26,14 @@ export default function LoginScreen() {
     if (!email.trim() || !password.trim()) {
       await appDialog.showMessage({
         title: "Eksik bilgi",
-        message: "E-posta ve şifre alanlarını doldurmalısın.",
+        message: "E-posta ve sifre alanlarini doldurmalisin.",
         tone: "warning",
       });
       return;
     }
 
-    try {
+    try
+    {
       setLoading(true);
 
       const data = (await apiFetch("/api/Auth/login", {
@@ -41,25 +42,29 @@ export default function LoginScreen() {
           email,
           password,
         }),
-      })) as AuthUser;
+      })) as AuthResponse;
 
       await saveAuthData(data.token, data);
 
       await appDialog.showMessage({
-        title: "Hoş geldin",
-        message: "Hesabına giriş yapıldı. Şimdi keşif akışı seni bekliyor.",
+        title: "Hos geldin",
+        message: "Hesabina giris yapildi. Simdi kesif akisina gecebilirsin.",
         tone: "success",
       });
 
       router.replace("/");
-    } catch (err: unknown) {
+    }
+    catch (err: unknown)
+    {
       await appDialog.showMessage({
-        title: "Giriş hatası",
+        title: "Giris hatasi",
         message:
-          err instanceof Error ? err.message : "Giriş yapılırken bir sorun oluştu.",
+          err instanceof Error ? err.message : "Giris yapilirken bir sorun olustu.",
         tone: "danger",
       });
-    } finally {
+    }
+    finally
+    {
       setLoading(false);
     }
   }
@@ -67,14 +72,14 @@ export default function LoginScreen() {
   return (
     <AppScrollCanvas contentContainerStyle={styles.content}>
       <HeroCard
-        eyebrow="BiKatıl"
-        title="Şehrin ritmine BiKatıl."
-        description="Yakındaki turnuvaları, buluşmaları ve sosyal planları BiKatıl’ın seçkin akışında keşfet."
+        eyebrow="BiKatil"
+        title="Sehrin ritmine BiKatil."
+        description="Yakindaki turnuvalari, bulusmalari ve sosyal planlari BiKatil akisi icinde kesfet."
       >
         <View style={styles.heroFooter}>
           <View style={styles.heroTextColumn}>
             <Text style={styles.heroCaption}>
-              Yerel keşif, güçlü topluluk ve tek dokunuşla katılım deneyimi.
+              Yerel kesif, guclu topluluk ve tek dokunusla katilim deneyimi.
             </Text>
           </View>
           <Image
@@ -86,9 +91,9 @@ export default function LoginScreen() {
       </HeroCard>
 
       <AppCard style={styles.formCard}>
-        <Text style={styles.formTitle}>BiKatıl’a tekrar hoş geldin</Text>
+        <Text style={styles.formTitle}>BiKatile tekrar hos geldin</Text>
         <Text style={styles.formSubtitle}>
-          Hesabınla giriş yap, sana uygun akışı aç ve şehirde neler olduğuna hemen bak.
+          Hesabinla giris yap, sana uygun akisi ac ve sehirde neler olduguna hemen bak.
         </Text>
 
         <View style={styles.formStack}>
@@ -102,17 +107,17 @@ export default function LoginScreen() {
           />
 
           <AppInput
-            label="Şifre"
+            label="Sifre"
             value={password}
             onChangeText={setPassword}
-            placeholder="Şifren"
+            placeholder="Sifren"
             secureTextEntry
           />
         </View>
 
-        <InkButton label="Giriş Yap" onPress={handleLogin} loading={loading} />
+        <InkButton label="Giris Yap" onPress={handleLogin} loading={loading} />
         <SecondaryButton
-          label="Hesap Oluştur"
+          label="Hesap Olustur"
           onPress={() => router.push("/register" as any)}
         />
       </AppCard>

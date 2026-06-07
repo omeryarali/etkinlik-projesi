@@ -6,15 +6,14 @@ import { appDialog } from "../components/app-dialog";
 import {
   AppBackButton,
   AppCard,
-  ErrorStateCard,
   AppInput,
   AppScrollCanvas,
+  ErrorStateCard,
   LoadingStateCard,
   PrimaryButton,
   SectionHeading,
   SecondaryButton,
 } from "../components/app-ui";
-import { AppTheme, Fonts } from "../constants/theme";
 import { apiFetch } from "../services/apiService";
 import { getAuthToken, saveAuthData } from "../services/authStorage";
 import type { AuthUser } from "../types/api";
@@ -68,7 +67,7 @@ export default function ProfileEditScreen() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Profil bilgileri alınamadı.");
+        setError("Profil bilgileri alinamadi.");
       }
     } finally {
       setLoading(false);
@@ -79,7 +78,7 @@ export default function ProfileEditScreen() {
     if (!fullName.trim()) {
       await appDialog.showMessage({
         title: "Eksik bilgi",
-        message: "Ad soyad alanı boş olamaz.",
+        message: "Ad soyad alani bos olamaz.",
         tone: "warning",
       });
       return;
@@ -116,22 +115,21 @@ export default function ProfileEditScreen() {
         role: data.role,
         isActive: data.isActive,
         createdAt: data.createdAt,
-        token,
       };
 
       await saveAuthData(token, updatedUser);
 
       await appDialog.showMessage({
-        title: "Profil güncellendi",
-        message: "Bilgilerin başarıyla kaydedildi.",
+        title: "Profil guncellendi",
+        message: "Bilgilerin basariyla kaydedildi.",
         tone: "success",
       });
       router.back();
     } catch (err: unknown) {
       await appDialog.showMessage({
-        title: "Güncelleme hatası",
+        title: "Guncelleme hatasi",
         message:
-          err instanceof Error ? err.message : "Profil güncellenirken bir sorun oluştu.",
+          err instanceof Error ? err.message : "Profil guncellenirken bir sorun olustu.",
         tone: "danger",
       });
     } finally {
@@ -150,7 +148,7 @@ export default function ProfileEditScreen() {
       <AppScrollCanvas contentContainerStyle={styles.centered}>
         <LoadingStateCard
           title="Profil bilgilerin geliyor"
-          description="Düzenleme alanları açılmadan önce mevcut hesabın hazırlanıyor."
+          description="Duzenleme alanlari acilmadan once mevcut hesabin hazirlaniyor."
         />
       </AppScrollCanvas>
     );
@@ -160,14 +158,14 @@ export default function ProfileEditScreen() {
     return (
       <AppScrollCanvas contentContainerStyle={styles.centered}>
         <ErrorStateCard
-          title="Profil düzenleme ekranı açılamadı"
+          title="Profil duzenleme ekrani acilamadi"
           description={error}
           actionLabel="Tekrar Dene"
           onAction={() => {
             void loadProfile();
           }}
         />
-        <SecondaryButton label="Geri Dön" onPress={() => router.back()} />
+        <SecondaryButton label="Geri Don" onPress={() => router.back()} />
       </AppScrollCanvas>
     );
   }
@@ -177,9 +175,9 @@ export default function ProfileEditScreen() {
       <AppBackButton onPress={() => router.back()} />
 
       <SectionHeading
-        eyebrow="Profil düzenleme"
-        title="Hesabını tazele"
-        subtitle="Kendini daha iyi yansıtan bilgilerle görünümünü ve iletişim alanlarını güncelle."
+        eyebrow="Profil duzenleme"
+        title="Hesabini tazele"
+        subtitle="Kendini daha iyi yansitan bilgilerle gorunumunu ve iletisim alanlarini guncelle."
       />
 
       <AppCard style={styles.card}>
@@ -194,7 +192,7 @@ export default function ProfileEditScreen() {
           label="E-posta"
           value={email}
           editable={false}
-          helpText="E-posta şu an değiştirilemiyor."
+          helpText="E-posta su an degistirilemiyor."
         />
 
         <AppInput
@@ -206,7 +204,7 @@ export default function ProfileEditScreen() {
         />
 
         <AppInput
-          label="Profil fotoğraf URL"
+          label="Profil fotograf URL"
           value={profileImageUrl}
           onChangeText={setProfileImageUrl}
           placeholder="https://example.com/profile.jpg"
@@ -230,18 +228,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     flexGrow: 1,
-  },
-  infoText: {
-    color: AppTheme.colors.textMuted,
-    fontSize: 14,
-    fontFamily: Fonts.sans,
-  },
-  errorText: {
-    color: AppTheme.colors.danger,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: "center",
-    fontFamily: Fonts.sans,
   },
   card: {
     gap: 14,

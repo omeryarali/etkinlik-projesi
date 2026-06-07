@@ -1,45 +1,51 @@
-# Dokümantasyon Dizini
+# Docs
 
-Son güncelleme: `2026-06-05`
+Son guncelleme: `2026-06-07`
 
-Bu klasör, Etkinlik Projesi'nin ürün, akış, veri modeli ve API belgelerini toplar.
+Bu klasor, BiKatil reposunun urun, teknik yapi, API ve yayin hazirligi dokumantasyonunu toplar.
 
-## İçerik
+## Icerik
 
-- [Proje Özeti](./proje-ozeti.md)
-- [MVP Özellikleri](./mvp-ozellikleri.md)
-- [Roller ve Akışlar](./roller-ve-akis.md)
+- [Proje Ozeti](./proje-ozeti.md)
+- [MVP Ozellikleri](./mvp-ozellikleri.md)
+- [Roller ve Akislar](./roller-ve-akis.md)
 - [API Listesi](./api-listesi.md)
-- [Veritabanı Tasarımı](./veritabani-tasarimi.md)
+- [Veritabani Tasarimi](./veritabani-tasarimi.md)
+- [Yayin ve Guvenlik Checklist](./yayin-ve-guvenlik-checklist.md)
 
-## Hangi Doküman Ne İçin?
-
-- `proje-ozeti.md`: Projenin amacı, kapsamı, teknoloji seçimi ve mevcut durumu
-- `mvp-ozellikleri.md`: İlk sürümde hedeflenen kapsam ve sınırlar
-- `roller-ve-akis.md`: Rol bazlı yetkiler ve temel iş akışları
-- `api-listesi.md`: Backend endpoint özeti ve kullanım notları
-- `veritabani-tasarimi.md`: Veri modeli ve ilişkiler
-
-## Okuma Sırası Önerisi
+## Onerilen Okuma Sirasi
 
 1. `proje-ozeti.md`
-2. `mvp-ozellikleri.md`
-3. `roller-ve-akis.md`
-4. `api-listesi.md`
-5. `veritabani-tasarimi.md`
+2. `roller-ve-akis.md`
+3. `api-listesi.md`
+4. `veritabani-tasarimi.md`
+5. `yayin-ve-guvenlik-checklist.md`
+6. `mvp-ozellikleri.md`
 
-## Kaynak Önceliği
+## Bu Dokumanlar Ne Icin Var?
 
-Bu dokümanlar kodla hizalanacak şekilde güncellenmiştir; yine de teknik doğruluk için son kaynak her zaman repo içindeki gerçek implementasyondur.
+- `proje-ozeti.md`: repodaki 3 uygulamanin ne yaptigi ve bugunku durumu
+- `mvp-ozellikleri.md`: MVP kapsaminda kalan ve sonraya birakilan alanlar
+- `roller-ve-akis.md`: Participant, Organizer ve Admin yetkileri
+- `api-listesi.md`: backend endpoint ozeti ve kritik davranis kurallari
+- `veritabani-tasarimi.md`: ana tablolar, iliskiler ve unique kurallar
+- `yayin-ve-guvenlik-checklist.md`: publish oncesi kontrol ve ortam degiskenleri
 
-Özellikle doğrulama gereken yerler:
+## Kaynak Onceligi
+
+Bu dokumanlar kodla hizali olacak sekilde guncellendi. Yine de son kaynak her zaman repo icindeki gercek implementasyondur.
+
+Ozellikle once bakilacak yerler:
 
 - `backend/EtkinlikProjesi.Api/Controllers`
-- `backend/EtkinlikProjesi.Api/Models`
-- `backend/EtkinlikProjesi.Api/Data`
+- `backend/EtkinlikProjesi.Api/Program.cs`
+- `backend/EtkinlikProjesi.Api/Data/AppDbContext.cs`
+- `admin-panel/src`
+- `mobile/src`
 
-## Notlar
+## Kisa Notlar
 
-- Önceki belgelerde görülen bozuk Türkçe karakterler temizlenmiştir.
-- Mobil uygulama artık yalnızca plan seviyesinde değil, repoda aktif ekranlara sahiptir.
-- Kategori yönetimi tarafında API ile admin panel arasında geliştirme ihtiyacı bulunan noktalar vardır; detay için `api-listesi.md` dosyasındaki notlara bakılabilir.
+- Uygulamanin urun adi artik `BiKatil`.
+- Backend tarafinda JWT, rate limit, CORS ve migration akisi sertlestirildi.
+- Admin panel production build dogrulandi.
+- Mobil tarafta token tekrarli saklama temizlendi; hala `AsyncStorage` kullanimina sahip.

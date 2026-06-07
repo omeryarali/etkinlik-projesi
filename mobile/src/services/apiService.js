@@ -21,9 +21,11 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    console.log("API ERROR URL:", url);
-    console.log("API ERROR STATUS:", response.status);
-    console.log("API ERROR DATA:", data);
+    if (__DEV__) {
+      console.log("API ERROR URL:", url);
+      console.log("API ERROR STATUS:", response.status);
+      console.log("API ERROR DATA:", data);
+    }
 
     if (typeof data === "string") {
       throw new Error(data || `İstek başarısız oldu. Status: ${response.status}`);

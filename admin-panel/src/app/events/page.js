@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "../../components/AdminLayout";
 import {
@@ -24,6 +24,14 @@ import { apiFetch } from "../../lib/api";
 import { getAdminToken, redirectToLogin } from "../../lib/auth";
 
 export default function EventsPage() {
+  return (
+    <Suspense fallback={<EventsPageFallback />}>
+      <EventsPageContent />
+    </Suspense>
+  );
+}
+
+function EventsPageContent() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status") || "";
 
@@ -475,4 +483,18 @@ function EventStatusBadge({ status }) {
   };
 
   return <StatusPill tone={tones[status] || "neutral"}>{status}</StatusPill>;
+}
+
+function EventsPageFallback() {
+  return (
+    <AdminLayout
+      title="Etkinlikler"
+      description="Onay surecindeki ve yayindaki etkinlikleri kalite odakli sekilde yonet."
+    >
+      <LoadingPanel
+        title="Etkinlik paneli hazirlaniyor"
+        description="Filtreler ve etkinlik kuyrugu yukleniyor."
+      />
+    </AdminLayout>
+  );
 }

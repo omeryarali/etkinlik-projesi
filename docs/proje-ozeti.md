@@ -1,76 +1,63 @@
-# Proje Özeti
+# Proje Ozeti
 
-Son güncelleme: `2026-06-05`
+Son guncelleme: `2026-06-07`
 
-## Projenin Amacı
+## Projenin Amaci
 
-Etkinlik Projesi, kullanıcıların şehir veya ilçe bazında etkinlik keşfedebildiği, organizatörlerin etkinlik yayınlayabildiği ve adminin platformu denetlediği bir etkinlik platformudur.
+BiKatil, kullanicilarin yakinlarindaki etkinlikleri kesfedebildigi, organizerlerin etkinlik yayinlayabildigi ve admin ekibinin tum platformu tek merkezden yonetebildigi bir etkinlik platformudur.
 
-Temel kullanıcı sorusu:
+Temel urun sorusu:
 
-> Bugün bulunduğum yerde hangi etkinlikler var?
+> Kullanici yakinindaki iyi etkinligi hizli bulabiliyor ve organizer bu etkinligi guvenli sekilde yayina alabiliyor mu?
 
-## Ürün Özeti
+## Repo Bilesenleri
 
-Platform üç ana rol etrafında şekillenir:
-
-- `Participant`: Etkinlik keşfeder, detay görür, etkinliğe katılır.
-- `Organizer`: Organizer başvurusu onaylandıktan sonra etkinlik oluşturur ve katılımcılarını yönetir.
-- `Admin`: Kullanıcı, organizatör, etkinlik ve kategori yönetimini yapar.
-
-## Repo Kapsamı
-
-Bu repoda üç ana uygulama bulunur:
+Bu repoda 3 ana uygulama bulunur:
 
 - `backend/EtkinlikProjesi.Api`: ASP.NET Core Web API
-- `admin-panel`: Next.js tabanlı admin panel
+- `admin-panel`: Next.js tabanli admin arayuzu
 - `mobile`: Expo / React Native mobil uygulama
 
-## Teknik Yığın
+## Teknik Yigin
 
 ### Backend
 
-- `ASP.NET Core Web API`
-- `Entity Framework Core`
-- `PostgreSQL`
-- `JWT Authentication`
-- `Swagger`
+- ASP.NET Core Web API
+- Entity Framework Core
+- PostgreSQL
+- JWT Authentication
+- Swagger
 
 ### Admin Panel
 
-- `Next.js 16`
-- `React 19`
-- `Tailwind CSS 4`
+- Next.js 16
+- React 19
+- Tailwind CSS 4
 
 ### Mobile
 
-- `Expo`
-- `React Native`
-- `expo-router`
-- `AsyncStorage`
+- Expo
+- React Native
+- expo-router
+- AsyncStorage
 
-## Mevcut Durum
+## Mevcut Urun Durumu
 
 ### Backend
 
-Backend tarafı işlevsel bir MVP seviyesinde.
+Backend calisir durumda ve temel is akislarini kapsiyor:
 
-Uygulanan ana başlıklar:
-
-- Kayıt, giriş, profil güncelleme, şifre değiştirme
-- JWT ve rol bazlı yetkilendirme
-- Organizer başvurusu, onay, red, askıya alma, yeniden aktifleştirme
-- Kategori oluşturma ve aktif/pasif yönetimi
-- Etkinlik oluşturma, güncelleme, iptal, tamamlama
-- Public etkinlik listeleme, filtreleme ve detay
-- Etkinliğe katılma, ayrılma ve katılımcı yönetimi
-- Admin dashboard ve listeleme endpointleri
+- kayit, login, profil guncelleme, sifre degistirme
+- organizer basvurusu ve organizer profil yonetimi
+- kategori yonetimi
+- etkinlik olusturma, guncelleme, iptal, tamamlama
+- public etkinlik listeleme ve detay
+- etkinlige katilma, ayrilma ve katilimci yoklamasi
+- admin dashboard ve listeleme endpointleri
 
 ### Admin Panel
 
-Admin panel kullanılabilir durumda ve API ile entegre.
-
-Mevcut sayfalar:
+Admin panel aktif ve build alir durumda:
 
 - `/login`
 - `/dashboard`
@@ -81,43 +68,35 @@ Mevcut sayfalar:
 
 ### Mobile
 
-Mobil uygulama dokümanlarda daha önce plan aşamasında görünse de repoda aktif geliştirme altında.
+Mobil uygulama aktif gelistirme asamasinda ve ana urun akislarini kapsiyor:
 
-Mevcut ekranlar:
+- login / register
+- kesfet
+- etkinlik detay
+- etkinliklerim
+- organizer basvurusu
+- organizer etkinlikleri
+- profil, profil duzenleme, sifre degistirme
 
-- `index`
-- `login`
-- `register`
-- `profile`
-- `profile-edit`
-- `change-password`
-- `explore`
-- `my-events`
-- `organizer-apply`
-- `organizer-events`
-- `create-event`
-- `events/[id]`
-- `organizer-event-detail/[id]`
-- `event-participants/[id]`
+## Bu Guncellemede Sertlestirilen Alanlar
 
-## Kullanıcı Akışı
+- JWT tokenlari artik `TokenVersion` ile izleniyor.
+- Kullanici pasiflestirilirse, rolu degisirse veya sifresi degisirse eski tokenlar gecersiz kaliyor.
+- `Auth/register` ve `Auth/login` icin rate limit eklendi.
+- Genel API trafigi icin global rate limit eklendi.
+- CORS artik tum ortamlarda kontrollu calisiyor; production icin explicit origin bekleniyor.
+- Uygulama acilisinda migration calistirma ve istege bagli bootstrap admin olusturma akisi eklendi.
+- `Users.NormalizedEmail`, `OrganizerProfiles.UserId` ve `EventParticipants(EventId, UserId)` tarafinda veritabani tekilligi eklendi.
+- Admin panelde token yalnizca tek yerde saklaniyor.
+- Mobile tarafta token kullanici objesi icinde tekrarli saklanmiyor.
 
-```text
-Kullanıcı kayıt olur.
-Kullanıcı giriş yapar.
-Kullanıcı onaylı etkinlikleri listeler.
-Kullanıcı isterse organizer başvurusu yapar.
-Admin organizer başvurusunu inceler.
-Admin onaylarsa kullanıcı Organizer rolüne geçer.
-Organizer etkinlik oluşturur.
-Etkinlik Pending durumunda admin onayına düşer.
-Admin etkinliği onaylar.
-Etkinlik Approved olur.
-Participant etkinliğe katılır.
-Organizer katılımcıları görür ve yoklama alır.
-```
+## Bilinen Sinirlar
 
-## Proje Yapısı
+- Mobile tarafi hala `AsyncStorage` kullaniyor; daha guclu bir sonraki adim `expo-secure-store`.
+- Dosya yukleme / medya altyapisi henuz gercek servisle bagli degil.
+- Sifremi unuttum, e-posta dogrulama ve push notification akislari henuz yok.
+
+## Dizin Yapisi
 
 ```text
 EtkinlikProjesi
@@ -128,16 +107,11 @@ EtkinlikProjesi
 `-- docs
 ```
 
-## Yakın Vadeli Öncelikler
+## Son Dogrulama
 
-- Backend yapılandırmasını güvenli hale getirmek
-- Admin panel ve mobilde bozuk karakter sorunlarını temizlemek
-- Mobil uygulama ile backend akışlarını uçtan uca doğrulamak
-- Ortam değişkenleri ve kurulum adımlarını netleştirmek
-- Deploy hazırlıklarını yapmak
+Bu guncelleme sonrasinda asagidaki kontroller basariyla calisti:
 
-## Notlar
-
-- `appsettings.json` içinde bağlantı bilgileri ve JWT anahtarı şu an placeholder durumda.
-- `GET /api/Category` endpointi yalnızca aktif kategorileri döndürür.
-- Dokümanlarda kaynak doğruluk önceliği her zaman koddadır.
+- `dotnet build` (`backend/EtkinlikProjesi.Api`)
+- `npm run lint` (`admin-panel`)
+- `npm run build` (`admin-panel`)
+- `npm run lint` (`mobile`)

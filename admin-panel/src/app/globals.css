@@ -7,6 +7,8 @@
   --admin-muted: #6f5a4f;
   --admin-accent: #cd754f;
   --admin-accent-soft: #f3dbc9;
+  --font-admin-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-admin-sans: "Aptos", "Segoe UI", "Trebuchet MS", "Helvetica Neue", sans-serif;
 }
 
 * {
